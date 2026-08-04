@@ -399,7 +399,12 @@ export function TimeField({
       >
         <FieldFrame
           label={label}
-          floated={display !== null || open}
+          // See DateField's identical fix: the value slot always shows *some*
+          // text (the picked time, or `placeholder`, which defaults to
+          // 'Pick a time'), so the label must float clear of it whenever a
+          // placeholder exists — not only once a real value is set, or the
+          // resting label sits directly on top of the placeholder text.
+          floated={display !== null || open || !!placeholder}
           focused={open}
           invalid={!!error}
           disabled={inert}

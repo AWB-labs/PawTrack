@@ -182,7 +182,13 @@ export function DateField({
       >
         <FieldFrame
           label={label}
-          floated={hasValue || open}
+          // Matches Input/TextArea's rule: the value slot always shows *some*
+          // text here (the picked date, or `placeholder` — which defaults to
+          // 'Pick a date' and is never empty), so the label has to float clear
+          // of it whenever a placeholder exists, not only once a value is set.
+          // Missing `!!placeholder` left the label sitting in its resting
+          // position directly on top of the placeholder text.
+          floated={hasValue || open || !!placeholder}
           focused={open}
           invalid={!!error}
           disabled={inert}

@@ -14,6 +14,7 @@ wrong you find out on step 3 rather than on your first sign-in.
 | `migrations/0003_functions.sql` | `peek_invite`, `accept_invite`, `care_tasks_for_day`, `care_day_summaries`, `adherence_summary` |
 | `migrations/0004_storage.sql` | The `pet-media` bucket + its four object policies |
 | `migrations/0005_seed_groups.sql` | Five starter community groups, so Community isn't empty on first run |
+| `migrations/0006_fix_pets_select_returning.sql` | Fixes the `pets` SELECT policy so `INSERT ... RETURNING` (i.e. `.insert().select().single()`) works for the row you just created — see the file's own comment for why the original policy failed only on the RETURNING side |
 
 ---
 

@@ -345,7 +345,12 @@ export function Select<T extends SelectValue>({
       >
         <FieldFrame
           label={label}
-          floated={hasValue || open}
+          // See DateField's identical fix: the value slot always shows *some*
+          // text (the picked option, or `placeholder`, which defaults to
+          // 'Choose one'), so the label must float clear of it whenever a
+          // placeholder exists — not only once a real value is set, or the
+          // resting label sits directly on top of the placeholder text.
+          floated={hasValue || open || !!placeholder}
           focused={open}
           invalid={!!error}
           disabled={inert}

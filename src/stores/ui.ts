@@ -158,8 +158,18 @@ export const useUI = create<UIState>()(
           activePetId: null,
           selectedDate: today(),
           feedScope: ALL_POSTS,
-          // Someone else's progress must not skip this person's first pet.
-          onboarding: state.onboarding.userId === userId ? state.onboarding : freshOnboarding(userId),
+          // The privacy concern this guards against is a DIFFERENT account's
+          // progress leaking onto this one's screen — the stated "shared
+          // iPad" case. Signing out (userId === null) isn't that: it's the
+          // same account, mid-transition, about to sign back in. Resetting
+          // here too meant every sign-out wiped the 'done' marker, so the
+          // very next sign-in — same person, same account — read as a fresh
+          // signup and sent them through onboarding again. Only a genuinely
+          // different, non-null user gets a clean slate.
+          onboarding:
+            userId === null || state.onboarding.userId === userId
+              ? state.onboarding
+              : freshOnboarding(userId),
         })),
     }),
     {

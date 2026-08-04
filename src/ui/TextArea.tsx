@@ -146,13 +146,25 @@ export function TextArea({
   const handleContentSize = useCallback(
     (event: NativeSyntheticEvent<TextInputContentSizeChangeEventData>) => {
       const measured = event.nativeEvent.contentSize.height;
-      const next = Math.min(maxHeight, Math.max(minHeight, Math.ceil(measured)));
-      // Sub-pixel churn on every keystroke would animate the box forever.
+      // Quantised to whole lines before anything else. `onContentSizeChange`
+      // fires with a slightly different raw pixel height on nearly every
+      // keystroke — not just at a real line wrap — from cursor-position and
+      // sub-pixel font-metric noise. Comparing raw pixels against a 1px
+      // threshold let each of those near-misses slip through and restart the
+      // timing animation from wherever the last one had gotten to, which is
+      // what read as the box continuously "melting" downward while typing
+      // rather than snapping once per genuine new line. Rounding to whole
+      // lines first means every measurement for the *same* line count
+      // collapses to the exact same target, so the animation only fires when
+      // the line count actually changes.
+      const lines = Math.round(measured / m.textBlock);
+      const quantised = lines * m.textBlock;
+      const next = Math.min(maxHeight, Math.max(minHeight, quantised));
       if (Math.abs(height.value - next) < 1) return;
       height.value = withTiming(next, t.motion.timing(t.motion.duration.fast, 'decelerate'));
       setScrolls(measured > maxHeight);
     },
-    [height, maxHeight, minHeight, t.motion],
+    [height, m.textBlock, maxHeight, minHeight, t.motion],
   );
 
   const handleFocus = useCallback(

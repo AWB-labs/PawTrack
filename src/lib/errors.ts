@@ -112,6 +112,75 @@ function isAuthLike(value: unknown): value is AuthLike {
   );
 }
 
+/**
+ * `DataError` (and its subclasses — `NetworkError`, `AuthenticationError`,
+ * `NotFoundError`, …) live in `SupabaseAdapter.ts`, not here, so this module
+ * doesn't take on that file as a dependency — same reasoning as the
+ * `PostgrestLike`/`AuthLike` duck-types above. A subclass overrides `.name`
+ * (`'NetworkError'`, not `'DataError'`), so the only reliable tell is `.kind`
+ * holding one of the adapter's own kind strings.
+ */
+type DataErrorLike = { kind: string; message: string; detail?: string | null };
+
+const DATA_ERROR_KINDS = new Set([
+  'network',
+  'auth',
+  'permission',
+  'not-found',
+  'conflict',
+  'invalid',
+  'storage',
+  'cancelled',
+  'server',
+]);
+
+function isDataErrorLike(value: unknown): value is DataErrorLike {
+  return (
+    value instanceof Error &&
+    isRecord(value) &&
+    typeof value.kind === 'string' &&
+    DATA_ERROR_KINDS.has(value.kind)
+  );
+}
+
+/**
+ * `SupabaseAdapter.ts` already did the real classification — a raw Postgres
+ * code or GoTrue message turned into one of `DataErrorKind`'s buckets, with a
+ * message already safe to show. This maps that decision onto `AppErrorKind`
+ * instead of re-deriving it from scratch, which is what let a `DataError`
+ * fall through every check below to the generic `'unknown'` bucket: it isn't
+ * a `PermissionError`, isn't `PostgrestLike` (the adapter already unwrapped
+ * that shape away), and carries no HTTP `status` for the later checks to key
+ * on. The user saw "Something went sideways" instead of "You don't have
+ * access to do that" purely because this mapping didn't exist yet.
+ */
+function fromDataError(error: DataErrorLike, debug: string): AppError {
+  switch (error.kind) {
+    case 'network':
+      return { kind: 'network', debug };
+    case 'storage':
+      return { kind: 'storage', debug };
+    case 'cancelled':
+      return { kind: 'cancelled', debug };
+    case 'conflict':
+      return { kind: 'conflict', debug };
+    case 'not-found':
+      return { kind: 'notFound', entity: null, debug };
+    case 'invalid':
+      return { kind: 'validation', field: null, detail: error.detail ?? null, debug };
+    case 'permission':
+      return { kind: 'permission', capability: null, petId: null, reason: null, debug };
+    case 'auth':
+      return { kind: 'auth', code: matchAuthMessage(error.message), debug };
+    // 'server': the adapter's retryable "something went wrong on our side"
+    // fallback has no matching AppErrorKind of its own; 'unknown' renders the
+    // same "try again" affordance without inventing a new bucket for one case.
+    case 'server':
+    default:
+      return { kind: 'unknown', debug };
+  }
+}
+
 function describe(value: unknown): string {
   if (value instanceof Error) return `${value.name}: ${value.message}`;
   if (typeof value === 'string') return value;
@@ -193,6 +262,14 @@ export function classifyError(error: unknown): AppError {
 
   if (error instanceof PetalError) {
     return withKind(error.kind, debug);
+  }
+
+  // Checked ahead of the PostgrestLike/AuthLike/status-code branches below:
+  // by the time SupabaseAdapter.ts throws a DataError, it has already
+  // unwrapped the raw Postgres/GoTrue error away, so none of those shape
+  // checks would ever match it — every DataError silently became 'unknown'.
+  if (isDataErrorLike(error)) {
+    return fromDataError(error, debug);
   }
 
   // Aborted requests (React Query cancellation, user navigating away) are not

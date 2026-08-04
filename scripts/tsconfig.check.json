@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "outDir": "../.tmp-check",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2021",
+    "lib": ["es2021"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": [
+    "check-contrast.ts",
+    "check-rbac-parity.ts",
+    "../src/theme/contrast.ts",
+    "../src/theme/palette.ts",
+    "../src/theme/tokens.ts",
+    "../src/rbac/permissions.ts"
+  ]
+}

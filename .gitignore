@@ -2,6 +2,8 @@
 
 # dependencies
 node_modules/
+.tmp-check/
+.expo-export-check/
 
 # Expo
 .expo/
@@ -32,6 +34,10 @@ yarn-error.*
 
 # local env files
 .env*.local
+# `.env` is NOT covered by the pattern above, and EXPO_PUBLIC_* values get
+# inlined into the bundle — so an un-ignored .env is a credential leak waiting
+# to happen. Ignore it explicitly; .env.example is the tracked template.
+.env
 
 # typescript
 *.tsbuildinfo

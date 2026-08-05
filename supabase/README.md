@@ -15,6 +15,7 @@ wrong you find out on step 3 rather than on your first sign-in.
 | `migrations/0004_storage.sql` | The `pet-media` bucket + its four object policies |
 | `migrations/0005_seed_groups.sql` | Five starter community groups, so Community isn't empty on first run |
 | `migrations/0006_fix_pets_select_returning.sql` | Fixes the `pets` SELECT policy so `INSERT ... RETURNING` (i.e. `.insert().select().single()`) works for the row you just created — see the file's own comment for why the original policy failed only on the RETURNING side |
+| `migrations/0007_fix_pets_caregiver_visibility.sql` | Fixes a name-resolution bug 0006 introduced: an unqualified `id` inside a `memberships` subquery resolved to `memberships.id` instead of the intended `pets.id`, so a caregiver with a valid, active membership could never actually see the pet — not on its detail screen, not in their pets list |
 
 ---
 

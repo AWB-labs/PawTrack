@@ -310,6 +310,20 @@ function mapAuthError(error: GoTrueError, fallback: string): Error {
   if (message.includes('already registered') || error.status === 422) {
     return new ConflictError('There’s already an account with that email. Sign in instead?', error.message);
   }
+  // Distinguished from the generic rate-limit branch below: this specific
+  // one means the *project's* shared email quota is exhausted, not that this
+  // person is being throttled — "give it a minute" would be actively
+  // misleading, since Supabase's default sender resets hourly, not by the
+  // minute. The account still gets created; only the confirmation email
+  // doesn't go out, so someone hitting this needs to know to try again later
+  // rather than assume they mistyped something and keep retrying.
+  if (message.includes('email rate limit') || message.includes('email_send_rate_limit')) {
+    return new DataError(
+      'server',
+      "We couldn't send a confirmation email right now — try again in a little while.",
+      { retryable: true, detail: error.message },
+    );
+  }
   if (message.includes('rate limit') || error.status === 429) {
     return new DataError('server', 'Too many attempts. Give it a minute and try again.', {
       retryable: true,

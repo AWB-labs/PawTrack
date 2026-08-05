@@ -7,8 +7,8 @@
  *   · **Schedule** puts everything on a rail with today drawn across it. It
  *     answers "what's owed, and when" in one downward glance.
  *   · **Due** and **Given** are stacks of full cards — vet, clinic, batch
- *     number, attachments — because that is what you read out to a receptionist
- *     or copy onto a boarding form.
+ *     number — because that is what you read out to a receptionist or copy
+ *     onto a boarding form.
  *
  * The overdue banner sits above all three and never scrolls away with the
  * filter, because a lapsed rabies shot is the single most consequential thing
@@ -23,8 +23,8 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 
-import { useDocuments, useVaccinations } from '@/data/queries/useHealth';
-import type { PetDocument, Vaccination } from '@/data/types';
+import { useVaccinations } from '@/data/queries/useHealth';
+import type { Vaccination } from '@/data/types';
 import { VaccinationCard, vaccinationStatus } from '@/features/health/VaccinationCard';
 import { VaccinationTimeline } from '@/features/health/VaccinationTimeline';
 import { usePetScope } from '@/features/pets/PetScope';
@@ -84,30 +84,11 @@ export default function VaccinationsScreen() {
   const canEdit = usePermission('vaccination.edit', petId);
 
   const vaccinationsQuery = useVaccinations(canView.allowed ? petId : null);
-  // Attachments are a nicety here, not the point — if the sitter can't see
-  // documents the cards simply render without them.
-  const documentsQuery = useDocuments(
-    canView.allowed && scope.capabilities.has('document.view') ? petId : null,
-  );
 
   const [view, setView] = useState<ViewValue>('schedule');
   const [refreshing, setRefreshing] = useState(false);
 
   const rows = useMemo(() => vaccinationsQuery.data ?? [], [vaccinationsQuery.data]);
-
-  const documentsById = useMemo(() => {
-    const map = new Map<string, PetDocument>();
-    for (const document of documentsQuery.data ?? []) map.set(document.id, document);
-    return map;
-  }, [documentsQuery.data]);
-
-  const attachmentsFor = useCallback(
-    (vaccination: Vaccination): PetDocument[] =>
-      vaccination.documentIds
-        .map((id) => documentsById.get(id))
-        .filter((document): document is PetDocument => document !== undefined),
-    [documentsById],
-  );
 
   /* ---- buckets ---------------------------------------------------------- */
 
@@ -149,13 +130,6 @@ export default function VaccinationsScreen() {
       else canEdit.explain(explainWith);
     },
     [canEdit, explainWith, openRecord],
-  );
-
-  const openDocument = useCallback(
-    (document: PetDocument) => {
-      router.push(toHref(`/pet/${petId}/documents?focus=${document.id}`));
-    },
-    [petId, router],
   );
 
   const refresh = useCallback(async () => {
@@ -384,11 +358,9 @@ export default function VaccinationsScreen() {
                 <Animated.View key={vaccination.id} entering={enter(index + 3)}>
                   <VaccinationCard
                     vaccination={vaccination}
-                    documents={attachmentsFor(vaccination)}
                     petName={pet.name}
                     now={now}
                     onPress={() => edit(vaccination)}
-                    onDocumentPress={openDocument}
                     disabledReason={editDisabledReason}
                   />
                 </Animated.View>

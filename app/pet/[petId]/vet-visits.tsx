@@ -18,8 +18,8 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
-import { useDeleteVetVisit, useDocuments, useVetVisits } from '@/data/queries/useHealth';
-import type { PetDocument, VetVisit } from '@/data/types';
+import { useDeleteVetVisit, useVetVisits } from '@/data/queries/useHealth';
+import type { VetVisit } from '@/data/types';
 import { VET_VISIT_TYPE_META, VetVisitCard } from '@/features/health/VetVisitCard';
 import { usePetScope } from '@/features/pets/PetScope';
 import { relativeTime, toDate } from '@/lib/date';
@@ -84,9 +84,6 @@ export default function VetVisitsScreen() {
   const canEdit = usePermission('vetvisit.edit', petId);
 
   const visitsQuery = useVetVisits(canView.allowed ? petId : null);
-  const documentsQuery = useDocuments(
-    canView.allowed && scope.capabilities.has('document.view') ? petId : null,
-  );
   const deleteVisit = useDeleteVetVisit(petId);
 
   const [pendingDelete, setPendingDelete] = useState<VetVisit | null>(null);
@@ -98,20 +95,6 @@ export default function VetVisitsScreen() {
     rows.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
     return rows;
   }, [visitsQuery.data]);
-
-  const documentsById = useMemo(() => {
-    const map = new Map<string, PetDocument>();
-    for (const document of documentsQuery.data ?? []) map.set(document.id, document);
-    return map;
-  }, [documentsQuery.data]);
-
-  const attachmentsFor = useCallback(
-    (visit: VetVisit): PetDocument[] =>
-      visit.documentIds
-        .map((id) => documentsById.get(id))
-        .filter((document): document is PetDocument => document !== undefined),
-    [documentsById],
-  );
 
   /* ---- the band --------------------------------------------------------- */
 
@@ -152,13 +135,6 @@ export default function VetVisitsScreen() {
       deleteSheet.open();
     },
     [canEdit, deleteSheet, explainWith],
-  );
-
-  const openDocument = useCallback(
-    (document: PetDocument) => {
-      router.push(toHref(`/pet/${petId}/documents?focus=${document.id}`));
-    },
-    [petId, router],
   );
 
   const refresh = useCallback(async () => {
@@ -208,17 +184,15 @@ export default function VetVisitsScreen() {
         content: (
           <VetVisitCard
             visit={visit}
-            documents={attachmentsFor(visit)}
             now={now}
             onPress={() => edit(visit)}
             onLongPress={() => askDelete(visit)}
-            onDocumentPress={openDocument}
             disabledReason={editDisabledReason}
           />
         ),
       };
     });
-  }, [askDelete, attachmentsFor, edit, editDisabledReason, now, openDocument, thisYear, visits]);
+  }, [askDelete, edit, editDisabledReason, now, thisYear, visits]);
 
   /* ---- chrome ----------------------------------------------------------- */
 
@@ -372,7 +346,7 @@ export default function VetVisitsScreen() {
         title="Remove this write-up?"
         body={
           pendingDelete
-            ? `“${pendingDelete.reason}” and everything recorded with it — diagnosis, treatment, cost — goes with it. The documents you attached stay in ${possessive(pet.name)} library.`
+            ? `“${pendingDelete.reason}” and everything recorded with it — diagnosis, treatment, cost — goes with it.`
             : undefined
         }
         confirmLabel="Remove the visit"

@@ -97,9 +97,6 @@ const REQUIRES: readonly (readonly [Capability, Capability])[] = [
   ['weight.log', 'weight.view'],
   ['vaccination.edit', 'vaccination.view'],
   ['vetvisit.edit', 'vetvisit.view'],
-  ['document.upload', 'document.view'],
-  ['appointment.create', 'appointment.view'],
-  ['appointment.edit', 'appointment.view'],
 ];
 
 const requirementFor = (capability: Capability): Capability | undefined =>
@@ -146,9 +143,6 @@ function actionPhrases(petName: string): readonly (readonly [Capability, string]
     ['weight.log', 'record weight'],
     ['vaccination.edit', 'update vaccinations'],
     ['vetvisit.edit', 'write up vet visits'],
-    ['document.upload', 'add photos and documents'],
-    ['appointment.create', 'book appointments'],
-    ['appointment.edit', 'reschedule appointments'],
     ['community.post', `post about ${petName}`],
   ];
 }

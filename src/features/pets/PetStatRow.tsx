@@ -235,31 +235,38 @@ export function PetStatRow({
 
   /* ---- appointment ------------------------------------------------------ */
 
-  const appointmentTile = nextAppointment ? (
-    <StatTile
-      label="Next vet visit"
-      value={friendlyDate(nextAppointment.at)}
-      icon="medkit-outline"
-      iconColor="onInfoSoft"
-      caption={nextAppointment.clinic ?? nextAppointment.reason}
-      onPress={onPressAppointment}
-      disabledReason={appointmentDisabledReason}
-      accessibilityHint="Opens appointments"
-    />
-  ) : (
-    <StatTile
-      label="Next vet visit"
-      value="—"
-      icon="medkit-outline"
-      iconColor="onInfoSoft"
-      caption={appointmentDisabledReason ?? 'Nothing booked'}
-      onPress={onPressAppointment}
-      disabledReason={appointmentDisabledReason}
-      accessibilityHint="Opens appointments"
-    />
-  );
+  // Omitted entirely (not just emptied) when the caller doesn't wire a press
+  // handler — that's the caller's signal that vet-visit booking isn't part of
+  // this build. A permanently non-interactive "Nothing booked" tile would be
+  // a dead end wearing the same chrome as the working ones.
+  const appointmentTile =
+    onPressAppointment && nextAppointment ? (
+      <StatTile
+        label="Next vet visit"
+        value={friendlyDate(nextAppointment.at)}
+        icon="medkit-outline"
+        iconColor="onInfoSoft"
+        caption={nextAppointment.clinic ?? nextAppointment.reason}
+        onPress={onPressAppointment}
+        disabledReason={appointmentDisabledReason}
+        accessibilityHint="Opens appointments"
+      />
+    ) : onPressAppointment ? (
+      <StatTile
+        label="Next vet visit"
+        value="—"
+        icon="medkit-outline"
+        iconColor="onInfoSoft"
+        caption={appointmentDisabledReason ?? 'Nothing booked'}
+        onPress={onPressAppointment}
+        disabledReason={appointmentDisabledReason}
+        accessibilityHint="Opens appointments"
+      />
+    ) : null;
 
-  const tiles: ReactNode[] = [weightTile, ageTile, adherenceTile, appointmentTile];
+  const tiles: ReactNode[] = [weightTile, ageTile, adherenceTile, appointmentTile].filter(
+    (tile) => tile !== null,
+  );
 
   return (
     <ScrollView {...scrollProps} style={style} testID={testID}>

@@ -102,10 +102,8 @@ const DOING_LABELS: readonly (readonly [Capability, string])[] = [
   ['feeding.log', 'Meals'],
   ['medicine.log', 'Medicine'],
   ['weight.log', 'Weight'],
-  ['appointment.create', 'Appointments'],
   ['vaccination.edit', 'Vaccinations'],
   ['vetvisit.edit', 'Visit notes'],
-  ['document.upload', 'Photos'],
   ['feeding.schedule.edit', 'Schedules'],
   ['community.post', 'Posts'],
 ];

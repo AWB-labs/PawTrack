@@ -136,7 +136,7 @@ export const OWNER_ONLY: readonly Capability[] = CAPABILITIES.filter(
  * recognisable shapes, so we offer those instead of a 27-checkbox wall — with a
  * "Custom" escape hatch.
  */
-export type PresetId = 'viewOnly' | 'dailyCare' | 'fullSitter' | 'vetTrips' | 'custom';
+export type PresetId = 'viewOnly' | 'dailyCare' | 'fullSitter' | 'custom';
 
 export type CaregiverPreset = {
   id: PresetId;
@@ -177,9 +177,9 @@ export const CAREGIVER_PRESETS: CaregiverPreset[] = [
   {
     id: 'fullSitter',
     label: 'Full sitter',
-    summary: 'Everything in Daily care, plus weight logs, health records and photos.',
+    summary: 'Everything in Daily care, plus weight logs and health records.',
     caregiverBlurb:
-      'You can log meals, medicine and weight, see health records, and add photos. Vaccination history is read-only.',
+      'You can log meals, medicine and weight, and see health records. Vaccination history is read-only.',
     icon: 'home-outline',
     grants: [
       'pet.view',
@@ -192,35 +192,8 @@ export const CAREGIVER_PRESETS: CaregiverPreset[] = [
       'weight.log',
       'vaccination.view',
       'vetvisit.view',
-      'document.view',
-      'document.upload',
       'appointment.view',
       'community.post',
-    ],
-  },
-  {
-    id: 'vetTrips',
-    label: 'Vet trips',
-    summary: 'Can book and update appointments and record what the vet said.',
-    caregiverBlurb:
-      'You can book appointments and write up visits. Handy if you are the one driving to the clinic.',
-    icon: 'medkit-outline',
-    grants: [
-      'pet.view',
-      'feeding.view',
-      'medicine.view',
-      'medicine.log',
-      'vaccination.view',
-      'vaccination.edit',
-      'vetvisit.view',
-      'vetvisit.edit',
-      'document.view',
-      'document.upload',
-      'appointment.view',
-      'appointment.create',
-      'appointment.edit',
-      'weight.view',
-      'weight.log',
     ],
   },
   {
@@ -442,25 +415,6 @@ export const CAPABILITY_GROUPS: CapabilityGroup[] = [
       },
       { capability: 'vetvisit.view', label: 'See vet visit history' },
       { capability: 'vetvisit.edit', label: 'Write up a vet visit' },
-    ],
-  },
-  {
-    id: 'documents',
-    label: 'Documents',
-    icon: 'document-attach-outline',
-    items: [
-      { capability: 'document.view', label: 'Open records & x-rays' },
-      { capability: 'document.upload', label: 'Add documents & photos' },
-    ],
-  },
-  {
-    id: 'appointments',
-    label: 'Appointments',
-    icon: 'calendar-outline',
-    items: [
-      { capability: 'appointment.view', label: 'See appointments' },
-      { capability: 'appointment.create', label: 'Book appointments' },
-      { capability: 'appointment.edit', label: 'Reschedule or edit' },
     ],
   },
   {

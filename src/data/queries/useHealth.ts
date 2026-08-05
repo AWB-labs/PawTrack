@@ -1,9 +1,9 @@
 /**
- * Health — weight, vaccinations, vet visits and documents.
+ * Health — weight, vaccinations and vet visits.
  *
- * One file because they are one screen: the health tab reads all four and a
- * single vet trip touches three of them. Splitting them would only mean four
- * imports and four chances to invalidate the wrong prefix.
+ * One file because they are one screen: the health tab reads all three and a
+ * single vet trip touches all of them. Splitting them would only mean three
+ * imports and three chances to invalidate the wrong prefix.
  *
  * What is optimistic here, and what deliberately isn't:
  *
@@ -15,14 +15,12 @@
  *  · **Form saves aren't.** A vaccination record is a considered edit behind a
  *    Save button — honest latency with a disabled button beats a row that
  *    appears, then vanishes because the server disagreed.
- *  · **Uploads aren't.** There is a real file crossing a real network; the
- *    progress state is the truth.
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { adapter } from '@/data';
-import type { DocumentInput, VaccinationInput, VetVisitInput, WeightInput } from '@/data/adapter';
+import type { VaccinationInput, VetVisitInput, WeightInput } from '@/data/adapter';
 import {
   captureQueries,
   invalidateAll,
@@ -31,7 +29,7 @@ import {
   STALE,
 } from '@/data/QueryProvider';
 import { careDerivedKeys, queryKeys } from '@/data/queryKeys';
-import type { ID, Pet, PetDocument, Vaccination, VetVisit, WeightEntry } from '@/data/types';
+import type { ID, Pet, Vaccination, VetVisit, WeightEntry } from '@/data/types';
 import { newId } from '@/lib/id';
 import { useActor } from '@/stores/session';
 
@@ -40,7 +38,6 @@ import { useActor } from '@/stores/session';
 export type AddWeightInput = Omit<WeightInput, 'petId'>;
 export type SaveVaccinationInput = Omit<VaccinationInput, 'petId'> & { id?: ID };
 export type SaveVetVisitInput = Omit<VetVisitInput, 'petId'> & { id?: ID };
-export type UploadDocumentInput = Omit<DocumentInput, 'petId'>;
 
 /* ------------------------------------------------------------------ weight */
 
@@ -242,72 +239,5 @@ export function useDeleteVetVisit(petId: ID) {
       showErrorToast(error, { scope: 'health.deleteVetVisit' });
     },
     onSettled: () => invalidateAll(client, [key, ...careDerivedKeys(petId)]),
-  });
-}
-
-/* --------------------------------------------------------------- documents */
-
-export function useDocuments(petId: ID | null | undefined) {
-  const { ctx, ready } = useActor();
-  const id = petId ?? '';
-
-  return useQuery({
-    queryKey: queryKeys.documents.forPet(id),
-    queryFn: () => adapter.listDocuments(ctx, id),
-    enabled: ready && id !== '',
-    staleTime: STALE.medium,
-  });
-}
-
-/**
- * Signed, short-lived viewing URL. Cached just inside its own lifetime so
- * reopening a record doesn't re-sign, and re-signs before it can expire in the
- * user's hands.
- */
-export function useDocumentUrl(petId: ID | null | undefined, documentId: ID | null | undefined) {
-  const { ctx, ready } = useActor();
-  const pet = petId ?? '';
-  const id = documentId ?? '';
-
-  return useQuery({
-    queryKey: queryKeys.documents.url(pet, id),
-    queryFn: () => adapter.resolveDocumentUrl(ctx, pet, id),
-    enabled: ready && pet !== '' && id !== '',
-    staleTime: STALE.signedUrl,
-    gcTime: STALE.signedUrl,
-  });
-}
-
-export function useUploadDocument(petId: ID) {
-  const { ctx } = useActor();
-  const client = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: UploadDocumentInput) => adapter.uploadDocument(ctx, { ...input, petId }),
-    onError: (error) => showErrorToast(error, { scope: 'health.uploadDocument' }),
-    onSettled: () => {
-      invalidateAll(client, [queryKeys.documents.forPet(petId), ...careDerivedKeys(petId)]);
-    },
-  });
-}
-
-export function useDeleteDocument(petId: ID) {
-  const { ctx } = useActor();
-  const client = useQueryClient();
-  const key = queryKeys.documents.forPet(petId);
-
-  return useMutation({
-    mutationFn: (id: ID) => adapter.deleteDocument(ctx, petId, id),
-    onMutate: async (id) => {
-      await client.cancelQueries({ queryKey: key });
-      const snapshot = captureQueries(client, [key]);
-      client.setQueryData<PetDocument[]>(key, (rows) => rows?.filter((row) => row.id !== id));
-      return { snapshot };
-    },
-    onError: (error, _id, context) => {
-      restoreQueries(client, context?.snapshot);
-      showErrorToast(error, { scope: 'health.deleteDocument' });
-    },
-    onSettled: () => invalidateAll(client, [key]),
   });
 }

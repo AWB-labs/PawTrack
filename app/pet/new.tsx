@@ -1,20 +1,20 @@
 /**
  * Add a pet — a wizard, not a form.
  *
- * A new pet needs eleven facts, and a single screen asking for eleven facts is
+ * A new pet needs nine facts, and a single screen asking for nine facts is
  * the moment most people put the phone down. So this asks *one question at a
  * time*, in the order a person would actually volunteer them: what kind of
  * animal, what they're called, what they look like, how old, the details, the
- * numbers, the chip — then a review before anything is written.
+ * numbers — then a review before anything is written.
  *
  * Choices worth defending:
  *
  *   · **The rail is the only progress indicator.** It's the same `StepRail` the
  *     onboarding flow uses, so "a multi-step thing in Petal" has one look.
  *   · **Nothing is mandatory except a species and a name.** A rescue arrives
- *     with no birthday, no breed and no chip number; a wizard that refuses to
- *     continue without them is a wizard that gets abandoned. Every other step
- *     turns its "Continue" into "Skip for now" when it's empty.
+ *     with no birthday and no breed; a wizard that refuses to continue without
+ *     them is a wizard that gets abandoned. Every other step turns its
+ *     "Continue" into "Skip for now" when it's empty.
  *   · **The weight is a *weigh-in*, not a profile field.** `createPet` doesn't
  *     take one — the pet's current weight is derived from its weight history —
  *     so the number typed here becomes the first entry on the chart.
@@ -64,16 +64,7 @@ import { SuccessCheck } from '@/ui/illustrations';
 
 /* -------------------------------------------------------------------- types */
 
-const STEPS = [
-  'species',
-  'name',
-  'photo',
-  'age',
-  'details',
-  'weight',
-  'microchip',
-  'review',
-] as const;
+const STEPS = ['species', 'name', 'photo', 'age', 'details', 'weight', 'review'] as const;
 
 type StepId = (typeof STEPS)[number];
 
@@ -92,8 +83,6 @@ type Draft = {
   sex: Sex;
   neutered: boolean | null;
   weightText: string;
-  microchipId: string;
-  microchipRegistry: string;
 };
 
 type StepCopy = { title: string; body: string };
@@ -112,12 +101,9 @@ const EMPTY_DRAFT: Draft = {
   sex: 'unknown',
   neutered: null,
   weightText: '',
-  microchipId: '',
-  microchipRegistry: '',
 };
 
 const NAME_MAX = 32;
-const MICROCHIP_MAX = 20;
 
 /** A 90kg mastiff exists; a 900kg one is a typo. */
 const MAX_WEIGHT_KG = 500;
@@ -158,11 +144,6 @@ function stepCopy(step: StepId, name: string): StepCopy {
       return {
         title: `What does ${who} weigh?`,
         body: 'This becomes the first point on their weight chart — the one your vet will ask about.',
-      };
-    case 'microchip':
-      return {
-        title: 'Microchip number',
-        body: 'Worth having somewhere you can find it at 9pm on a Sunday. Skip it if you don’t have it to hand.',
       };
     case 'review':
     default:
@@ -281,11 +262,9 @@ export default function NewPetScreen() {
       ? 'Back to review'
       : step === 'photo' && draft.photoUri === null
         ? 'Skip for now'
-        : step === 'microchip' && draft.microchipId.trim().length === 0
+        : step === 'weight' && draft.weightText.trim().length === 0
           ? 'Skip for now'
-          : step === 'weight' && draft.weightText.trim().length === 0
-            ? 'Skip for now'
-            : 'Continue';
+          : 'Continue';
 
   /* ---- navigation ------------------------------------------------------- */
 
@@ -318,8 +297,8 @@ export default function NewPetScreen() {
         neutered: draft.neutered,
         colorMarkings: null,
         photoUrl: draft.photoUri,
-        microchipId: draft.microchipId.trim() || null,
-        microchipRegistry: draft.microchipRegistry.trim() || null,
+        microchipId: null,
+        microchipRegistry: null,
         targetWeightKg: null,
         notes: null,
         allergies: [],
@@ -635,34 +614,6 @@ export default function NewPetScreen() {
           </Column>
         );
 
-      case 'microchip':
-        return (
-          <Column gap="md">
-            <Input
-              label="Chip number"
-              value={draft.microchipId}
-              onChangeText={(microchipId) => patch({ microchipId })}
-              placeholder="985 1410 0012 3456"
-              helper="15 digits on most chips. We only ever store it on this pet."
-              leadingIcon="hardware-chip-outline"
-              keyboardType="number-pad"
-              maxLength={MICROCHIP_MAX}
-              clearable
-            />
-            <Input
-              label="Registry"
-              value={draft.microchipRegistry}
-              onChangeText={(microchipRegistry) => patch({ microchipRegistry })}
-              placeholder="Petlog, AVID, HomeAgain…"
-              helper="Whoever holds the record, so you know who to ring."
-              leadingIcon="business-outline"
-              autoCapitalize="words"
-              autoCorrect={false}
-              clearable
-            />
-          </Column>
-        );
-
       case 'review':
       default:
         return (
@@ -731,16 +682,6 @@ export default function NewPetScreen() {
               iconTone="success"
               onPress={() => editFromReview(STEPS.indexOf('weight'))}
               accessibilityHint="Goes back to change the weight."
-              divider
-            />
-            <ListRow
-              title="Microchip"
-              value={draft.microchipId.trim() || 'Not added'}
-              valueCaption={draft.microchipRegistry.trim() || undefined}
-              icon="hardware-chip-outline"
-              iconTone="neutral"
-              onPress={() => editFromReview(STEPS.indexOf('microchip'))}
-              accessibilityHint="Goes back to change the microchip details."
             />
           </Surface>
         );

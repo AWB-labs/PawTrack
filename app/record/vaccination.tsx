@@ -26,17 +26,16 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 
-import { useDeleteVaccination, useDocuments, useSaveVaccination, useVaccinations } from '@/data/queries/useHealth';
+import { useDeleteVaccination, useSaveVaccination, useVaccinations } from '@/data/queries/useHealth';
 import { usePet } from '@/data/queries/usePets';
-import type { DateOnly, PetDocument } from '@/data/types';
-import { describeDocument, DocumentThumbnail } from '@/features/health/DocumentTile';
+import type { DateOnly } from '@/data/types';
 import {
   VACCINATION_STATUS_META,
   vaccinationStatus,
 } from '@/features/health/VaccinationCard';
 import { fromDateOnly, dueLabel, toDateOnly } from '@/lib/date';
 import { toHref } from '@/lib/deeplinks';
-import { plural, possessive } from '@/lib/format';
+import { possessive } from '@/lib/format';
 import haptics from '@/lib/haptics';
 import { DENIAL_COPY, type DenialReason } from '@/rbac/permissions';
 import { useNow, usePermission } from '@/rbac/usePermission';
@@ -44,7 +43,6 @@ import { useTheme, type SpeciesKey } from '@/theme';
 import {
   Badge,
   Button,
-  Checkbox,
   Chip,
   Column,
   ConfirmSheet,
@@ -53,12 +51,10 @@ import {
   Icon,
   IconButton,
   Input,
-  ListRow,
   Row,
   Screen,
   ScreenHeader,
   SectionHeader,
-  Sheet,
   Surface,
   Switch,
   Text,
@@ -271,12 +267,7 @@ function VaccinationForm({
 
   const save = useSaveVaccination(petId);
   const remove = useDeleteVaccination(petId);
-  // Attaching paperwork is optional here, and a sitter may hold `vaccination.edit`
-  // without `document.view` — so the list query is armed only when it's allowed.
-  const canSeeDocuments = usePermission('document.view', petId);
-  const documentsQuery = useDocuments(canSeeDocuments.allowed ? petId : null);
 
-  const attachSheet = useSheet();
   const deleteSheet = useSheet();
 
   const [draft, setDraft] = useState<Draft>(initial);
@@ -311,15 +302,6 @@ function VaccinationForm({
   );
   const previewMeta = VACCINATION_STATUS_META[preview];
 
-  const documents = useMemo(() => documentsQuery.data ?? [], [documentsQuery.data]);
-  const attached = useMemo(
-    () =>
-      draft.documentIds
-        .map((docId) => documents.find((document) => document.id === docId))
-        .filter((document): document is PetDocument => document !== undefined),
-    [documents, draft.documentIds],
-  );
-
   /* ---- actions ---------------------------------------------------------- */
 
   const applySuggestion = useCallback(
@@ -340,19 +322,6 @@ function VaccinationForm({
       });
     },
     [draft.administeredAt, now, patch],
-  );
-
-  const toggleDocument = useCallback(
-    (documentId: string) => {
-      haptics.tap();
-      setDraft((prev) => ({
-        ...prev,
-        documentIds: prev.documentIds.includes(documentId)
-          ? prev.documentIds.filter((value) => value !== documentId)
-          : [...prev.documentIds, documentId],
-      }));
-    },
-    [],
   );
 
   const submit = useCallback(() => {
@@ -617,57 +586,8 @@ function VaccinationForm({
         </Surface>
       </Animated.View>
 
-      {/* ---- paperwork ----------------------------------------------------- */}
-      <Animated.View entering={enter(3)} style={{ gap: t.spacing.md }}>
-        <SectionHeader
-          title="Paperwork"
-          subtitle="Link the card or certificate you photographed, so it travels with the record."
-          icon="document-attach-outline"
-          iconColor="textTertiary"
-          actionLabel={documents.length > 0 ? 'Choose files' : undefined}
-          onAction={documents.length > 0 ? () => attachSheet.open() : undefined}
-          actionIcon="attach-outline"
-        />
-
-        <Surface variant="surface" elevation={1} radius="xl" padding="base" style={{ gap: t.spacing.md }}>
-          {attached.length > 0 ? (
-            <Row gap="sm" wrap>
-              {attached.map((document) => (
-                <Column key={document.id} gap="xxs" style={{ width: t.spacing.giant }}>
-                  <DocumentThumbnail document={document} size={t.spacing.giant} />
-                  <Text variant="caption" color="textTertiary" numberOfLines={2}>
-                    {document.title}
-                  </Text>
-                </Column>
-              ))}
-            </Row>
-          ) : (
-            <Text variant="footnote" color="textTertiary">
-              {documents.length > 0
-                ? 'Nothing linked yet.'
-                : `No files in ${possessive(name)} library yet — add one from the Documents screen and it'll show up here.`}
-            </Text>
-          )}
-
-          <Button
-            label={attached.length > 0 ? `Change (${plural(attached.length, 'file')})` : 'Attach a file'}
-            onPress={() =>
-              documents.length > 0
-                ? attachSheet.open()
-                : router.push(toHref(`/pet/${petId}/documents`))
-            }
-            variant="tonal"
-            size="sm"
-            leftIcon="attach-outline"
-            accessibilityHint={
-              documents.length > 0 ? 'Choose which files belong to this record.' : 'Opens the document library.'
-            }
-          />
-        </Surface>
-      </Animated.View>
-
       {/* ---- notes --------------------------------------------------------- */}
-      <Animated.View entering={enter(4)} style={{ gap: t.spacing.md }}>
+      <Animated.View entering={enter(3)} style={{ gap: t.spacing.md }}>
         <SectionHeader
           title="Anything else"
           subtitle="A reaction, a half dose, a note from the nurse."
@@ -688,7 +608,7 @@ function VaccinationForm({
       </Animated.View>
 
       {existingId ? (
-        <Animated.View entering={enter(5)}>
+        <Animated.View entering={enter(4)}>
           <Button
             label="Remove this record"
             onPress={() => deleteSheet.open()}
@@ -700,47 +620,6 @@ function VaccinationForm({
           />
         </Animated.View>
       ) : null}
-
-      {/* ---- attach sheet -------------------------------------------------- */}
-      <Sheet
-        controller={attachSheet}
-        title="Attach paperwork"
-        subtitle={`Anything in ${possessive(name)} library can be linked here.`}
-        size="half"
-        scrollable
-      >
-        <Column gap="xxs">
-          {documents.map((document) => {
-            const checked = draft.documentIds.includes(document.id);
-            return (
-              <ListRow
-                key={document.id}
-                leading={<DocumentThumbnail document={document} size={t.spacing.xxxl} />}
-                title={document.title}
-                subtitle={describeDocument(document)}
-                selected={checked}
-                onPress={() => toggleDocument(document.id)}
-                trailing={
-                  <Checkbox
-                    checked={checked}
-                    onChange={() => toggleDocument(document.id)}
-                    accessibilityLabel={`Attach ${document.title}`}
-                  />
-                }
-              />
-            );
-          })}
-        </Column>
-        <View style={{ paddingTop: t.spacing.base }}>
-          <Button
-            label="Done"
-            onPress={() => attachSheet.close()}
-            variant="secondary"
-            size="md"
-            fullWidth
-          />
-        </View>
-      </Sheet>
 
       <ConfirmSheet
         controller={deleteSheet}

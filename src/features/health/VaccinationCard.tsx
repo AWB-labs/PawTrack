@@ -30,12 +30,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import type { PetDocument, Vaccination, VaccinationStatus } from '@/data/types';
+import type { Vaccination, VaccinationStatus } from '@/data/types';
 import { dueLabel, formatDay, toDate } from '@/lib/date';
-import { plural } from '@/lib/format';
 import { useTheme, type Theme } from '@/theme';
 import { Badge, Card, Column, Icon, Row, Text, type BadgeTone, type IconName } from '@/ui';
-import { DocumentThumbnail } from './DocumentTile';
 
 /* -------------------------------------------------------------------- types */
 
@@ -49,18 +47,15 @@ export type VaccinationStatusMeta = {
 
 export type VaccinationCardProps = {
   vaccination: Vaccination;
-  /** Already resolved from `vaccination.documentIds` by the screen. */
-  documents?: readonly PetDocument[];
   /** Warms the accessibility summary — "Buddy's rabies booster". */
   petName?: string;
   /** Injected so a list shares one clock and can't disagree with itself. */
   now?: Date;
   onPress?: () => void;
   onLongPress?: () => void;
-  onDocumentPress?: (document: PetDocument) => void;
   /** Looks disabled and explains itself on tap — the RBAC affordance. */
   disabledReason?: string;
-  /** Drops the detail block and the attachments — for summary lists. */
+  /** Drops the detail block — for summary lists. */
   compact?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
@@ -106,8 +101,6 @@ export const VACCINATION_STATUS_META: Record<VaccinationStatus, VaccinationStatu
     blurb: 'Add the dates and we’ll keep an eye on the next one.',
   },
 };
-
-const DOCUMENT_STRIP_MAX = 4;
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -170,12 +163,10 @@ function sentenceCase(value: string): string {
 
 export function VaccinationCard({
   vaccination,
-  documents = [],
   petName,
   now,
   onPress,
   onLongPress,
-  onDocumentPress,
   disabledReason,
   compact = false,
   style,
@@ -243,8 +234,6 @@ export function VaccinationCard({
     .filter((part): part is string => Boolean(part))
     .join('. ');
 
-  const strip = documents.slice(0, DOCUMENT_STRIP_MAX);
-  const overflow = documents.length - strip.length;
   const disc = t.spacing.huge;
 
   /* ---- render ----------------------------------------------------------- */
@@ -342,35 +331,6 @@ export function VaccinationCard({
           ) : null}
         </Column>
       )}
-
-      {!compact && strip.length > 0 ? (
-        <Row gap="sm" wrap accessibilityLabel={`${plural(documents.length, 'attachment')}`}>
-          {strip.map((document) => (
-            <DocumentThumbnail
-              key={document.id}
-              document={document}
-              size={t.spacing.huge}
-              onPress={onDocumentPress ? () => onDocumentPress(document) : undefined}
-            />
-          ))}
-          {overflow > 0 ? (
-            <View
-              style={{
-                width: t.spacing.huge,
-                height: t.spacing.huge,
-                borderRadius: t.radius.md,
-                backgroundColor: t.color.surfaceAlt,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text variant="captionStrong" color="textSecondary" tabular>
-                {`+${overflow}`}
-              </Text>
-            </View>
-          ) : null}
-        </Row>
-      ) : null}
     </Card>
   );
 }

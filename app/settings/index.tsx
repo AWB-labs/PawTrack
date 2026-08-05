@@ -5,15 +5,14 @@
  * words, five chevrons, and no way to know whether anything behind them is on.
  * So every row here carries its *current value*, and the values are read from
  * the same places the sub-screens write to — the preference store, the app
- * settings store, the OS permission, the enrolled biometric.
+ * settings store, the OS permission.
  *
  * Two consequences of that decision:
  *
  *   · **The device-owned values are refetched on focus.** Notification
- *     permission and biometric enrolment can both change while Petal is in the
- *     background — someone taps "Open settings", flips a switch, and comes
- *     back. Re-reading on focus is what stops this screen from confidently
- *     showing yesterday's answer.
+ *     permission can change while Petal is in the background — someone taps
+ *     "Open settings", flips a switch, and comes back. Re-reading on focus is
+ *     what stops this screen from confidently showing yesterday's answer.
  *   · **A blocked permission is stated, not implied.** "Blocked" in the warning
  *     tone beats "All on" over a switch the OS is quietly ignoring.
  *
@@ -32,12 +31,10 @@ import { SettingsGroup } from '@/features/settings/SettingsGroup';
 import { SettingsRow } from '@/features/settings/SettingsRow';
 import {
   countActiveReminders,
-  describeAutoLock,
   describeQuietHours,
   describeReminders,
   useAppSettings,
 } from '@/features/settings/appSettings';
-import biometrics, { type BiometricAvailability } from '@/lib/biometrics';
 import { toHref } from '@/lib/deeplinks';
 import { getPermission, type PermissionOutcome } from '@/lib/notifications';
 import { usePreferences } from '@/stores/preferences';
@@ -81,24 +78,18 @@ export default function SettingsHubScreen() {
   const weightUnit = usePreferences((s) => s.weightUnit);
   const hapticsOn = usePreferences((s) => s.haptics);
   const appReduceMotion = usePreferences((s) => s.reduceMotion);
-  const biometricLock = usePreferences((s) => s.biometricLock);
   const reminders = useAppSettings((s) => s.reminders);
   const quietHours = useAppSettings((s) => s.quietHours);
-  const autoLockAfterMs = useAppSettings((s) => s.autoLockAfterMs);
 
   /* ---- values the device owns ------------------------------------------ */
 
   const [permission, setPermission] = useState<PermissionOutcome | null>(null);
-  const [lockKind, setLockKind] = useState<BiometricAvailability | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
       void getPermission().then((next) => {
         if (alive) setPermission(next);
-      });
-      void biometrics.isAvailable().then((next) => {
-        if (alive) setLockKind(next);
       });
       return () => {
         alive = false;
@@ -130,19 +121,6 @@ export default function SettingsHubScreen() {
     if (quietHours.enabled) return `Held quietly from ${describeQuietHours(quietHours)}`;
     return 'Meals, doses, vet visits and refills';
   }, [permission, quietHours, reminders]);
-
-  const securityValue = useMemo(() => {
-    if (!lockKind) return undefined;
-    if (!lockKind.available) return 'Unavailable';
-    return biometricLock ? `${lockKind.label} on` : 'Off';
-  }, [biometricLock, lockKind]);
-
-  const securitySubtitle = useMemo(() => {
-    if (!lockKind) return 'Checking what this phone can do';
-    if (!lockKind.available) return lockKind.explanation ?? 'This phone can’t lock Petal';
-    if (!biometricLock) return `Ask for ${lockKind.label} before opening Petal`;
-    return `Re-locks ${describeAutoLock(autoLockAfterMs).toLowerCase()}`;
-  }, [autoLockAfterMs, biometricLock, lockKind]);
 
   const enter = useCallback(
     (index: number) =>
@@ -183,7 +161,7 @@ export default function SettingsHubScreen() {
           title="Petal on this phone"
           icon="phone-portrait-outline"
           animate={false}
-          footer="All three live on this handset. Sign in somewhere else and you’ll choose them again there."
+          footer="Both live on this handset. Sign in somewhere else and you’ll choose them again there."
         >
           <SettingsRow
             icon="contrast-outline"
@@ -202,15 +180,6 @@ export default function SettingsHubScreen() {
             value={remindersValue}
             accessibilityHint="Opens reminder categories, quiet hours and a test notification."
             onPress={() => router.push(toHref('/settings/notifications'))}
-          />
-          <SettingsRow
-            icon={lockKind?.available ? 'finger-print-outline' : 'lock-closed-outline'}
-            tone="info"
-            title="Security"
-            subtitle={securitySubtitle}
-            value={securityValue}
-            accessibilityHint="Opens the app lock and the auto-lock delay."
-            onPress={() => router.push(toHref('/settings/security'))}
           />
         </SettingsGroup>
       </Animated.View>

@@ -56,6 +56,11 @@ export const usePreferences = create<PreferencesState>()(
     {
       name: 'petal.preferences.v1',
       storage: createJSONStorage(() => AsyncStorage),
+      // v1: the settings screen that could ever arm `biometricLock` is gone, so
+      // any device that had already armed it is force-unlocked rather than left
+      // stranded behind a switch nothing can reach anymore.
+      version: 1,
+      migrate: (persisted) => ({ ...(persisted as PreferencesState), biometricLock: false }),
     },
   ),
 );

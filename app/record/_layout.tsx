@@ -1,6 +1,6 @@
 /**
  * Create/edit forms for the sub-entities that hang off a pet (a vaccination, a
- * dose, an appointment…).
+ * dose…).
  *
  * They live in their own group as modals rather than as routes under
  * `pet/[petId]/` because they're *tasks*, not destinations: you open one, finish
@@ -29,8 +29,6 @@ export default function RecordLayout() {
       <Stack.Screen name="vet-visit" />
       <Stack.Screen name="feeding-schedule" />
       <Stack.Screen name="medicine" />
-      <Stack.Screen name="appointment" />
-      <Stack.Screen name="document" />
     </Stack>
   );
 }

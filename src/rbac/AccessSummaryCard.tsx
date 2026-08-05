@@ -110,7 +110,6 @@ const ALL_GROUPS: CapabilityGroup[] = [PROFILE_GROUP, ...CAPABILITY_GROUPS];
 const RESERVED_FOR_OWNER: readonly Capability[] = [
   'pet.edit',
   'medicine.edit',
-  'document.delete',
   'caregiver.invite',
   'activity.view',
 ];

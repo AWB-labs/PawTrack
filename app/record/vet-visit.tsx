@@ -24,13 +24,11 @@ import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-rea
 import {
   useAddWeight,
   useDeleteVetVisit,
-  useDocuments,
   useSaveVetVisit,
   useVetVisits,
 } from '@/data/queries/useHealth';
 import { usePet } from '@/data/queries/usePets';
-import type { DateOnly, PetDocument, TimeOfDay, VetVisitType } from '@/data/types';
-import { describeDocument, DocumentThumbnail } from '@/features/health/DocumentTile';
+import type { DateOnly, TimeOfDay, VetVisitType } from '@/data/types';
 import { VET_VISIT_TYPE_META, VET_VISIT_TYPES } from '@/features/health/VetVisitCard';
 import { applyTimeOfDay, toDateOnly, toTimeOfDay } from '@/lib/date';
 import { toHref } from '@/lib/deeplinks';
@@ -39,7 +37,6 @@ import {
   formatCurrency,
   formatWeight,
   fromDisplayWeight,
-  plural,
   possessive,
   toDisplayWeight,
   weightUnitLabel,
@@ -51,7 +48,6 @@ import { usePreferences } from '@/stores/preferences';
 import { useTheme } from '@/theme';
 import {
   Button,
-  Checkbox,
   Chip,
   Column,
   ConfirmSheet,
@@ -60,13 +56,11 @@ import {
   Icon,
   IconButton,
   Input,
-  ListRow,
   Row,
   Screen,
   ScreenHeader,
   SectionHeader,
   Select,
-  Sheet,
   Surface,
   Switch,
   Text,
@@ -275,10 +269,7 @@ function VetVisitForm({ petId, petName, existingId, initial, onClose }: VetVisit
   const addWeight = useAddWeight(petId);
 
   const canLogWeight = usePermission('weight.log', petId);
-  const canSeeDocuments = usePermission('document.view', petId);
-  const documentsQuery = useDocuments(canSeeDocuments.allowed ? petId : null);
 
-  const attachSheet = useSheet();
   const deleteSheet = useSheet();
 
   const [draft, setDraft] = useState<Draft>(initial);
@@ -326,15 +317,6 @@ function VetVisitForm({ petId, petName, existingId, initial, onClose }: VetVisit
 
   /* ---- derived ---------------------------------------------------------- */
 
-  const documents = useMemo(() => documentsQuery.data ?? [], [documentsQuery.data]);
-  const attached = useMemo(
-    () =>
-      draft.documentIds
-        .map((docId) => documents.find((document) => document.id === docId))
-        .filter((document): document is PetDocument => document !== undefined),
-    [documents, draft.documentIds],
-  );
-
   const at = useMemo(
     () => (applyTimeOfDay(draft.day, draft.time) ?? new Date()).toISOString(),
     [draft.day, draft.time],
@@ -346,16 +328,6 @@ function VetVisitForm({ petId, petName, existingId, initial, onClose }: VetVisit
       : null;
 
   /* ---- actions ---------------------------------------------------------- */
-
-  const toggleDocument = useCallback((documentId: string) => {
-    haptics.tap();
-    setDraft((prev) => ({
-      ...prev,
-      documentIds: prev.documentIds.includes(documentId)
-        ? prev.documentIds.filter((value) => value !== documentId)
-        : [...prev.documentIds, documentId],
-    }));
-  }, []);
 
   const submit = useCallback(async () => {
     if (trimmedReason.length === 0) {
@@ -701,56 +673,8 @@ function VetVisitForm({ petId, petName, existingId, initial, onClose }: VetVisit
         </Surface>
       </Animated.View>
 
-      {/* ---- paperwork ------------------------------------------------------ */}
-      <Animated.View entering={enter(5)} style={{ gap: t.spacing.md }}>
-        <SectionHeader
-          title="Paperwork"
-          subtitle="Link the invoice, the x-ray, the discharge notes."
-          icon="document-attach-outline"
-          iconColor="textTertiary"
-          actionLabel={documents.length > 0 ? 'Choose files' : undefined}
-          onAction={documents.length > 0 ? () => attachSheet.open() : undefined}
-          actionIcon="attach-outline"
-        />
-        <Surface variant="surface" elevation={1} radius="xl" padding="base" style={{ gap: t.spacing.md }}>
-          {attached.length > 0 ? (
-            <Row gap="sm" wrap>
-              {attached.map((document) => (
-                <Column key={document.id} gap="xxs" style={{ width: t.spacing.giant }}>
-                  <DocumentThumbnail document={document} size={t.spacing.giant} />
-                  <Text variant="caption" color="textTertiary" numberOfLines={2}>
-                    {document.title}
-                  </Text>
-                </Column>
-              ))}
-            </Row>
-          ) : (
-            <Text variant="footnote" color="textTertiary">
-              {documents.length > 0
-                ? 'Nothing linked yet.'
-                : `No files in ${possessive(name)} library yet — add one from the Documents screen and it'll show up here.`}
-            </Text>
-          )}
-
-          <Button
-            label={attached.length > 0 ? `Change (${plural(attached.length, 'file')})` : 'Attach a file'}
-            onPress={() =>
-              documents.length > 0 ? attachSheet.open() : router.push(toHref(`/pet/${petId}/documents`))
-            }
-            variant="tonal"
-            size="sm"
-            leftIcon="attach-outline"
-            accessibilityHint={
-              documents.length > 0
-                ? 'Choose which files belong to this visit.'
-                : 'Opens the document library.'
-            }
-          />
-        </Surface>
-      </Animated.View>
-
       {/* ---- notes ---------------------------------------------------------- */}
-      <Animated.View entering={enter(6)} style={{ gap: t.spacing.md }}>
+      <Animated.View entering={enter(5)} style={{ gap: t.spacing.md }}>
         <SectionHeader
           title="Anything else"
           subtitle="How they coped, what to watch for, what to ask next time."
@@ -771,7 +695,7 @@ function VetVisitForm({ petId, petName, existingId, initial, onClose }: VetVisit
       </Animated.View>
 
       {existingId ? (
-        <Animated.View entering={enter(7)}>
+        <Animated.View entering={enter(6)}>
           <Button
             label="Remove this write-up"
             onPress={() => deleteSheet.open()}
@@ -783,41 +707,6 @@ function VetVisitForm({ petId, petName, existingId, initial, onClose }: VetVisit
           />
         </Animated.View>
       ) : null}
-
-      {/* ---- attach sheet --------------------------------------------------- */}
-      <Sheet
-        controller={attachSheet}
-        title="Attach paperwork"
-        subtitle={`Anything in ${possessive(name)} library can be linked here.`}
-        size="half"
-        scrollable
-      >
-        <Column gap="xxs">
-          {documents.map((document) => {
-            const checked = draft.documentIds.includes(document.id);
-            return (
-              <ListRow
-                key={document.id}
-                leading={<DocumentThumbnail document={document} size={t.spacing.xxxl} />}
-                title={document.title}
-                subtitle={describeDocument(document)}
-                selected={checked}
-                onPress={() => toggleDocument(document.id)}
-                trailing={
-                  <Checkbox
-                    checked={checked}
-                    onChange={() => toggleDocument(document.id)}
-                    accessibilityLabel={`Attach ${document.title}`}
-                  />
-                }
-              />
-            );
-          })}
-        </Column>
-        <View style={{ paddingTop: t.spacing.base }}>
-          <Button label="Done" onPress={() => attachSheet.close()} variant="secondary" size="md" fullWidth />
-        </View>
-      </Sheet>
 
       <ConfirmSheet
         controller={deleteSheet}

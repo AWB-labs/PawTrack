@@ -32,10 +32,8 @@ export default function PetStackLayout() {
         <Stack.Screen name="weight" />
         <Stack.Screen name="vaccinations" />
         <Stack.Screen name="vet-visits" />
-        <Stack.Screen name="documents" />
         <Stack.Screen name="feeding" />
         <Stack.Screen name="medicine" />
-        <Stack.Screen name="appointments" />
         <Stack.Screen name="caregivers" />
         <Stack.Screen name="invite" options={routeTransition.modal} />
         <Stack.Screen name="activity" />

@@ -141,9 +141,6 @@ const ACTION_PHRASES: readonly (readonly [Capability, string])[] = [
   ['feeding.schedule.edit', 'change the feeding schedule'],
   ['vaccination.edit', 'update vaccinations'],
   ['vetvisit.edit', 'write up vet visits'],
-  ['document.upload', 'add photos and documents'],
-  ['appointment.create', 'book appointments'],
-  ['appointment.edit', 'reschedule appointments'],
   ['community.post', 'post about them'],
 ];
 

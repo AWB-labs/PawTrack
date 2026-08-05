@@ -77,10 +77,8 @@ const OFFER_LABELS: readonly (readonly [Capability, string])[] = [
   ['feeding.log', 'Log meals'],
   ['medicine.log', 'Log doses'],
   ['weight.log', 'Record weight'],
-  ['appointment.create', 'Book appointments'],
   ['vaccination.edit', 'Update vaccinations'],
   ['vetvisit.edit', 'Write up vet visits'],
-  ['document.upload', 'Add photos and documents'],
   ['feeding.schedule.edit', 'Change the feeding schedule'],
   ['community.post', 'Post about them'],
 ];

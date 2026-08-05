@@ -43,7 +43,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useUpcomingAppointments } from '@/data/queries/useAppointments';
 import { useCareTasks, useDayProgress } from '@/data/queries/useCareTasks';
 import { useMyMemberships } from '@/data/queries/useCaregivers';
 import { useVaccinations } from '@/data/queries/useHealth';
@@ -92,9 +91,6 @@ const ALERT_PET_CAP = 3;
 
 /** Doses left in the pack that make a refill worth mentioning. */
 const REFILL_THRESHOLD = 4;
-
-/** Appointments read ahead when looking for "tomorrow". */
-const UPCOMING_WINDOW = 10;
 
 /** The states that still want something from someone. */
 const OUTSTANDING: readonly CareTask['state'][] = ['due', 'overdue', 'upcoming'];
@@ -350,7 +346,7 @@ function TodayBoard() {
   if (isToday) {
     add(
       <Animated.View key="alerts" entering={enter(3)}>
-        <TodayAlerts pets={scopedPets} petIndex={petIndex} onOpen={openPath} />
+        <TodayAlerts pets={scopedPets} onOpen={openPath} />
       </Animated.View>,
     );
   }
@@ -540,66 +536,20 @@ function NothingScheduled({ pets, isToday, onSetUp }: NothingScheduledProps) {
 
 type TodayAlertsProps = {
   pets: readonly Pet[];
-  petIndex: Map<ID, Pet>;
   onOpen: (path: string) => void;
 };
 
 /**
- * The three things that are about to become problems. Each is dismissible for
+ * The things that are about to become problems. Each is dismissible for
  * the session — a nudge you can't put down stops being a nudge.
  */
-function TodayAlerts({ pets, petIndex, onOpen }: TodayAlertsProps) {
+function TodayAlerts({ pets, onOpen }: TodayAlertsProps) {
   return (
     <Column gap="sm">
-      <TomorrowVisitBanner petIndex={petIndex} onOpen={onOpen} />
       {pets.slice(0, ALERT_PET_CAP).map((pet) => (
         <PetAlertBanner key={pet.id} pet={pet} onOpen={onOpen} />
       ))}
     </Column>
-  );
-}
-
-function TomorrowVisitBanner({
-  petIndex,
-  onOpen,
-}: {
-  petIndex: Map<ID, Pet>;
-  onOpen: (path: string) => void;
-}) {
-  const now = useNow();
-  const [dismissed, setDismissed] = useState(false);
-  // Wide enough that a three-pet household's tomorrow can't fall off the end.
-  const { data } = useUpcomingAppointments(UPCOMING_WINDOW);
-
-  const tomorrow = useMemo(
-    () =>
-      (data ?? []).find((appointment) => {
-        const at = new Date(appointment.at);
-        return !Number.isNaN(at.getTime()) && differenceInCalendarDays(at, now) === 1;
-      }) ?? null,
-    [data, now],
-  );
-
-  if (dismissed || !tomorrow) return null;
-
-  const pet = petIndex.get(tomorrow.petId);
-  const name = pet?.name ?? 'Your pet';
-  const where = tomorrow.clinic ? ` · ${tomorrow.clinic}` : '';
-
-  return (
-    <Banner
-      tone="info"
-      icon="calendar-outline"
-      title={`${name} has an appointment tomorrow`}
-      message={`${tomorrow.reason} at ${formatClock(tomorrow.at)}${where}. Worth setting out the carrier tonight.`}
-      action={{
-        label: 'See the details',
-        icon: 'arrow-forward',
-        onPress: () => onOpen(`/pet/${tomorrow.petId}/appointments`),
-      }}
-      onDismiss={() => setDismissed(true)}
-      dismissLabel="Hide this reminder"
-    />
   );
 }
 

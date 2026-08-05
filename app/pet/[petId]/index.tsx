@@ -12,14 +12,14 @@
  *   · **Reads are gated as hard as writes.** The adapter asserts a capability on
  *     every list call, so a section the viewer can't see isn't fetched at all —
  *     passing `null` for the pet id is what disables the query. A sitter without
- *     `document.view` never generates a permission error just by arriving.
+ *     `medicine.view` never generates a permission error just by arriving.
  *   · **Owner-only actions are absent, not disabled.** Edit, invite and delete
  *     are things a caregiver can never be granted, so showing them greyed out
  *     would read as a threat rather than an explanation. Everything a sitter
  *     *could* have been granted stays visible, dimmed, and explains itself.
  *   · **Deleting names what is lost.** The confirm sheet counts the real rows —
- *     weigh-ins, vaccinations, documents, people — because "this cannot be
- *     undone" is a sentence nobody reads.
+ *     weigh-ins, vaccinations, people — because "this cannot be undone" is a
+ *     sentence nobody reads.
  */
 
 import { useRouter } from 'expo-router';
@@ -27,15 +27,14 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
-import { useAppointments } from '@/data/queries/useAppointments';
 import { useCareTasks } from '@/data/queries/useCareTasks';
 import { usePetActivity, usePetCaregivers } from '@/data/queries/useCaregivers';
 import { useFeedingSchedules } from '@/data/queries/useFeeding';
-import { useDocuments, useVaccinations, useVetVisits, useWeights } from '@/data/queries/useHealth';
+import { useVaccinations, useVetVisits, useWeights } from '@/data/queries/useHealth';
 import { useMedicineLogs, useMedicines } from '@/data/queries/useMedicine';
 import { useDeletePet, usePet } from '@/data/queries/usePets';
 import { useUser } from '@/data/queries/useUsers';
-import { SPECIES_META, type Appointment, type CareTask, type Pet } from '@/data/types';
+import { SPECIES_META, type CareTask, type Pet } from '@/data/types';
 import type { PetStatusChip } from '@/features/pets/PetCard';
 import { PetHero, PetHeroBar, type PetHeroAction } from '@/features/pets/PetHero';
 import { usePetScope } from '@/features/pets/PetScope';
@@ -100,15 +99,6 @@ function denial(reason: DenialReason | null): { title: string; body: string } {
   return DENIAL_COPY[reason ?? 'not-granted'];
 }
 
-function nextAppointmentOf(rows: readonly Appointment[], now: number): Appointment | null {
-  return (
-    rows
-      .filter((row) => row.status !== 'cancelled' && row.status !== 'completed')
-      .filter((row) => Date.parse(row.at) >= now)
-      .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))[0] ?? null
-  );
-}
-
 /* ---------------------------------------------------------------- component */
 
 export default function PetProfileScreen() {
@@ -133,11 +123,9 @@ export default function PetProfileScreen() {
   const logMeal = usePermission('feeding.log', petId);
   const logDose = usePermission('medicine.log', petId);
   const logWeight = usePermission('weight.log', petId);
-  const bookVet = usePermission('appointment.create', petId);
 
   const seeWeight = usePermission('weight.view', petId);
   const seeMedicine = usePermission('medicine.view', petId);
-  const seeAppointments = usePermission('appointment.view', petId);
 
   /* ---- reads, each disabled unless its capability is held --------------- */
 
@@ -155,8 +143,6 @@ export default function PetProfileScreen() {
   const weightsQuery = useWeights(seeWeight.allowed ? petId : null);
   const vaccinationsQuery = useVaccinations(gated('vaccination.view'));
   const vetVisitsQuery = useVetVisits(gated('vetvisit.view'));
-  const documentsQuery = useDocuments(gated('document.view'));
-  const appointmentsQuery = useAppointments(seeAppointments.allowed ? petId : null);
   const caregiversQuery = usePetCaregivers(gated('caregiver.view'));
   const activityQuery = usePetActivity(gated('activity.view'));
 
@@ -182,8 +168,6 @@ export default function PetProfileScreen() {
   const weights = weightsQuery.data ?? [];
   const vaccinations = useMemo(() => vaccinationsQuery.data ?? [], [vaccinationsQuery.data]);
   const vetVisits = vetVisitsQuery.data ?? [];
-  const documents = documentsQuery.data ?? [];
-  const appointments = useMemo(() => appointmentsQuery.data ?? [], [appointmentsQuery.data]);
   const caregivers = useMemo(() => caregiversQuery.data ?? [], [caregiversQuery.data]);
   const activity = activityQuery.data ?? [];
 
@@ -193,8 +177,6 @@ export default function PetProfileScreen() {
     const given = rows.filter((row) => row.status === 'given').length;
     return given / rows.length;
   }, [doseLogsQuery.data]);
-
-  const nextAppointment = useMemo(() => nextAppointmentOf(appointments, now), [appointments, now]);
 
   const activeMedicines = useMemo(() => medicines.filter((row) => row.active), [medicines]);
 
@@ -404,16 +386,6 @@ export default function PetProfileScreen() {
         : () => logWeight.explain(explainWith),
       disabledReason: logWeight.allowed ? undefined : denial(logWeight.reason).title,
     },
-    {
-      id: 'vet',
-      label: 'Book a vet',
-      icon: 'medkit-outline',
-      tone: 'info',
-      onPress: bookVet.allowed
-        ? () => open(`/record/appointment?petId=${petId}`)
-        : () => bookVet.explain(explainWith),
-      disabledReason: bookVet.allowed ? undefined : denial(bookVet.reason).title,
-    },
   ];
 
   /* ---- section summaries ------------------------------------------------ */
@@ -452,14 +424,6 @@ export default function PetProfileScreen() {
     return `${latest.reason} · ${friendlyDate(latest.at)}`;
   })();
 
-  const appointmentSummary = nextAppointment
-    ? `${nextAppointment.reason} · ${friendlyDate(nextAppointment.at)}`
-    : 'Nothing booked';
-
-  const documentSummary = documents.length === 0
-    ? 'Records, x-rays and insurance live here'
-    : joinWithAnd(documents.slice(0, 2).map((row) => row.title));
-
   /* ---- content ---------------------------------------------------------- */
 
   return (
@@ -485,7 +449,6 @@ export default function PetProfileScreen() {
         pet={pet}
         weights={weights}
         adherence={adherence}
-        nextAppointment={nextAppointment}
         loading={seeWeight.allowed && weightsQuery.isPending}
         onPressWeight={
           seeWeight.allowed
@@ -498,16 +461,8 @@ export default function PetProfileScreen() {
             ? () => open(`/pet/${petId}/medicine`)
             : () => seeMedicine.explain(explainWith)
         }
-        onPressAppointment={
-          seeAppointments.allowed
-            ? () => open(`/pet/${petId}/appointments`)
-            : () => seeAppointments.explain(explainWith)
-        }
         weightDisabledReason={seeWeight.allowed ? undefined : denial(seeWeight.reason).title}
         medicineDisabledReason={seeMedicine.allowed ? undefined : denial(seeMedicine.reason).title}
-        appointmentDisabledReason={
-          seeAppointments.allowed ? undefined : denial(seeAppointments.reason).title
-        }
       />
 
       <View style={{ paddingHorizontal: t.gutter, gap: t.spacing.lg }}>
@@ -628,33 +583,6 @@ export default function PetProfileScreen() {
             onPress={() => open(`/pet/${petId}/vet-visits`)}
             accessibilityHint="Opens the vet visit history."
           />
-
-          <SectionCard
-            capability="appointment.view"
-            petId={petId}
-            explainWith={explainWith}
-            title="Appointments"
-            summary={appointmentSummary}
-            icon="calendar-outline"
-            tone="primary"
-            loading={appointmentsQuery.isPending}
-            onPress={() => open(`/pet/${petId}/appointments`)}
-            accessibilityHint="Opens the appointment list."
-          />
-
-          <SectionCard
-            capability="document.view"
-            petId={petId}
-            explainWith={explainWith}
-            title="Documents"
-            summary={documentSummary}
-            icon="document-attach-outline"
-            tone="neutral"
-            value={documents.length > 0 ? plural(documents.length, 'file') : undefined}
-            loading={documentsQuery.isPending}
-            onPress={() => open(`/pet/${petId}/documents`)}
-            accessibilityHint="Opens saved documents."
-          />
         </Animated.View>
 
         {scope.isOwner ? (
@@ -747,7 +675,6 @@ export default function PetProfileScreen() {
           weights={weights.length}
           vaccinations={vaccinations.length}
           vetVisits={vetVisits.length}
-          documents={documents.length}
           people={Math.max(0, caregivers.length - 1)}
         />
       </ConfirmSheet>
@@ -1014,7 +941,6 @@ type DeletionManifestProps = {
   weights: number;
   vaccinations: number;
   vetVisits: number;
-  documents: number;
   people: number;
 };
 
@@ -1028,7 +954,6 @@ function DeletionManifest({
   weights,
   vaccinations,
   vetVisits,
-  documents,
   people,
 }: DeletionManifestProps) {
   const t = useTheme();
@@ -1038,7 +963,6 @@ function DeletionManifest({
     weights > 0 ? `📈  ${plural(weights, 'weigh-in')}` : null,
     vaccinations > 0 ? `💉  ${plural(vaccinations, 'vaccination record')}` : null,
     vetVisits > 0 ? `🩺  ${plural(vetVisits, 'vet visit')}` : null,
-    documents > 0 ? `📄  ${plural(documents, 'saved document')}` : null,
     people > 0 ? `👥  access for ${plural(people, 'person', 'people')}` : null,
   ].filter((line): line is string => line !== null);
 

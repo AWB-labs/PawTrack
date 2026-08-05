@@ -23,13 +23,12 @@
 import React, { useMemo } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
-import type { PetDocument, VetVisit, VetVisitType } from '@/data/types';
+import type { VetVisit, VetVisitType } from '@/data/types';
 import { dueLabel, formatDay, formatClock } from '@/lib/date';
-import { formatCurrency, formatWeight, plural } from '@/lib/format';
+import { formatCurrency, formatWeight } from '@/lib/format';
 import { usePreferences } from '@/stores/preferences';
 import { useTheme } from '@/theme';
 import { Badge, Card, Column, Icon, Row, Text, type BadgeTone, type IconName } from '@/ui';
-import { DocumentThumbnail } from './DocumentTile';
 import { toneSkin } from './VaccinationCard';
 
 /* -------------------------------------------------------------------- types */
@@ -42,16 +41,13 @@ export type VetVisitTypeMeta = {
 
 export type VetVisitCardProps = {
   visit: VetVisit;
-  /** Already resolved from `visit.documentIds` by the screen. */
-  documents?: readonly PetDocument[];
   /** Injected so a list shares one clock. */
   now?: Date;
   onPress?: () => void;
   onLongPress?: () => void;
-  onDocumentPress?: (document: PetDocument) => void;
   /** Looks disabled and explains itself on tap — the RBAC affordance. */
   disabledReason?: string;
-  /** Drops the write-up and the attachments — for a rail or a summary row. */
+  /** Drops the write-up — for a rail or a summary row. */
   compact?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
@@ -80,17 +76,13 @@ export const VET_VISIT_TYPES: readonly VetVisitType[] = [
   'other',
 ];
 
-const DOCUMENT_STRIP_MAX = 4;
-
 /* ---------------------------------------------------------------- component */
 
 export function VetVisitCard({
   visit,
-  documents = [],
   now,
   onPress,
   onLongPress,
-  onDocumentPress,
   disabledReason,
   compact = false,
   style,
@@ -108,9 +100,6 @@ export function VetVisitCard({
     .join(' · ');
 
   const cost = visit.costMinor === null ? null : formatCurrency(visit.costMinor, visit.currency, { compactZeros: true });
-
-  const strip = documents.slice(0, DOCUMENT_STRIP_MAX);
-  const overflow = documents.length - strip.length;
 
   const summary = [
     `${meta.label}: ${visit.reason}`,
@@ -209,35 +198,6 @@ export function VetVisitCard({
           ) : null}
         </Column>
       )}
-
-      {!compact && strip.length > 0 ? (
-        <Row gap="sm" wrap accessibilityLabel={plural(documents.length, 'attachment')}>
-          {strip.map((document) => (
-            <DocumentThumbnail
-              key={document.id}
-              document={document}
-              size={t.spacing.huge}
-              onPress={onDocumentPress ? () => onDocumentPress(document) : undefined}
-            />
-          ))}
-          {overflow > 0 ? (
-            <View
-              style={{
-                width: t.spacing.huge,
-                height: t.spacing.huge,
-                borderRadius: t.radius.md,
-                backgroundColor: t.color.surfaceAlt,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text variant="captionStrong" color="textSecondary" tabular>
-                {`+${overflow}`}
-              </Text>
-            </View>
-          ) : null}
-        </Row>
-      ) : null}
     </Card>
   );
 }

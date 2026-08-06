@@ -7,6 +7,7 @@
  * an app feel unfinished.
  */
 
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   Fraunces_600SemiBold,
   Fraunces_600SemiBold_Italic,
@@ -27,4 +28,10 @@ export const fontModules = {
   PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
+  // Every icon in the app is Ionicons (see `src/ui/Icon.tsx`). Without this,
+  // the splash screen hides as soon as the *text* fonts are ready, so any
+  // icon that paints on the very first frame (before its own re-render)
+  // can land before Ionicons' glyph font is actually resident — it renders
+  // as a blank glyph, not a "tofu" box, so it's easy to miss in a screenshot.
+  ...Ionicons.font,
 } as const;

@@ -22,10 +22,8 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import type { OAuthProvider } from '@/data/adapter';
 import { AuthScaffold } from '@/features/auth/AuthScaffold';
 import { PasswordField, passwordProblem } from '@/features/auth/PasswordField';
-import { SocialAuthButtons } from '@/features/auth/SocialAuthButtons';
 import { openExternal } from '@/lib/deeplinks';
 import { toUserMessage, type UserMessage } from '@/lib/errors';
 import haptics from '@/lib/haptics';
@@ -114,7 +112,6 @@ export default function SignUpScreen() {
   const router = useRouter();
 
   const signUp = useSession((s) => s.signUp);
-  const signInWithOAuth = useSession((s) => s.signInWithOAuth);
   const pending = useSession((s) => s.pending);
 
   const nameRef = useRef<InputHandle>(null);
@@ -127,7 +124,6 @@ export default function SignUpScreen() {
   const [touched, setTouched] = useState({ name: false, email: false, password: false });
   const [failure, setFailure] = useState<UserMessage | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [provider, setProvider] = useState<OAuthProvider | null>(null);
 
   const busy = pending === 'signUp' || pending === 'oauth';
   const greeting = firstName(name);
@@ -166,23 +162,6 @@ export default function SignUpScreen() {
       setAttempt((n) => n + 1);
     }
   }, [email, name, password, signUp]);
-
-  const onOAuth = useCallback(
-    async (chosen: OAuthProvider) => {
-      setFailure(null);
-      setProvider(chosen);
-      try {
-        await signInWithOAuth(chosen);
-        haptics.success();
-      } catch (error) {
-        haptics.error();
-        setFailure(toUserMessage(error));
-      } finally {
-        setProvider(null);
-      }
-    },
-    [signInWithOAuth],
-  );
 
   return (
     <AuthScaffold
@@ -335,14 +314,6 @@ export default function SignUpScreen() {
             fullWidth
             haptic="commit"
             testID="sign-up-submit"
-          />
-
-          <SocialAuthButtons
-            onSelect={(chosen) => void onOAuth(chosen)}
-            pending={provider}
-            disabled={pending === 'signUp'}
-            verb="Sign up"
-            separator="or"
           />
         </Column>
       </Column>

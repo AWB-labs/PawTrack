@@ -24,11 +24,9 @@ import { useRouter } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { isMockData } from '@/data';
-import type { OAuthProvider } from '@/data/adapter';
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '@/data/mock/MockAdapter';
 import { AuthScaffold } from '@/features/auth/AuthScaffold';
 import { PasswordField } from '@/features/auth/PasswordField';
-import { SocialAuthButtons } from '@/features/auth/SocialAuthButtons';
 import biometrics, { type BiometricAvailability } from '@/lib/biometrics';
 import { toUserMessage, type UserMessage } from '@/lib/errors';
 import haptics from '@/lib/haptics';
@@ -133,7 +131,6 @@ export default function SignInScreen() {
   const router = useRouter();
 
   const signIn = useSession((s) => s.signIn);
-  const signInWithOAuth = useSession((s) => s.signInWithOAuth);
   const pending = useSession((s) => s.pending);
   const biometricArmed = usePreferences((s) => s.biometricLock);
 
@@ -146,7 +143,6 @@ export default function SignInScreen() {
   const [touched, setTouched] = useState({ email: false, password: false });
   const [failure, setFailure] = useState<UserMessage | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [provider, setProvider] = useState<OAuthProvider | null>(null);
   const [sensor, setSensor] = useState<BiometricAvailability | null>(null);
 
   useEffect(() => {
@@ -209,23 +205,6 @@ export default function SignInScreen() {
       void attemptSignIn({ email: account.email, password: DEMO_PASSWORD });
     },
     [attemptSignIn, roles],
-  );
-
-  const onOAuth = useCallback(
-    async (chosen: OAuthProvider) => {
-      setFailure(null);
-      setProvider(chosen);
-      try {
-        await signInWithOAuth(chosen);
-        haptics.success();
-      } catch (error) {
-        haptics.error();
-        setFailure(toUserMessage(error));
-      } finally {
-        setProvider(null);
-      }
-    },
-    [signInWithOAuth],
   );
 
   /**
@@ -398,13 +377,6 @@ export default function SignInScreen() {
             </Row>
           ) : null}
         </Column>
-
-        <SocialAuthButtons
-          onSelect={(chosen) => void onOAuth(chosen)}
-          pending={provider}
-          disabled={pending === 'signIn'}
-          separator="or"
-        />
       </Column>
 
       <Sheet

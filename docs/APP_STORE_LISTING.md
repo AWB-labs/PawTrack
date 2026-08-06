@@ -1,0 +1,82 @@
+# Petal — app store listing copy
+
+Ready to paste into App Store Connect and Google Play Console. Character counts are
+shown next to every field with a hard limit — verify against the current store rules
+before submitting, in case Apple/Google have changed them.
+
+Reflects the app as it stands today: no vet-booking/appointments feature, no in-app
+document library, no Security settings tab. Update this file if that changes.
+
+---
+
+## Apple App Store (App Store Connect)
+
+### Subtitle — 30 characters max
+```
+Pet care, shared with sitters
+```
+(29 characters)
+
+### Promotional text — 170 characters max
+*Can be changed anytime without a new build/review — good place for what's-new-ish messaging.*
+```
+Track feeding, meds, weight, and vet visits for every pet. Invite a sitter with exactly the access they need, for exactly as long as they need it.
+```
+(146 characters)
+
+### Keywords — 100 characters max
+*Comma-separated, no spaces after commas, no need to repeat words already in the app name or subtitle.*
+```
+dog,cat,sitter,caregiver,feeding,medication,vaccination,reminder,tracker,weight,health,record,vet
+```
+(97 characters)
+
+### Description — 4000 characters max
+```
+Petal keeps everyone who looks after your pet on the same page.
+
+Log what matters — feeding, medicine, weight, vaccinations, and vet visit write-ups — for every pet in your home, in one place instead of scattered notes and photos.
+
+SHARE CARE, ON YOUR TERMS
+Invite a partner, family member, or sitter to help out. Pick from ready-made presets like View Only, Daily Care, or Full Sitter, or choose exactly what they can see and do. Set a start and end date and their access switches off on its own — no need to remember to revoke it.
+
+EVERYTHING IN ONE RECORD
+• Feeding and medicine schedules, with one-tap logging
+• Weight tracked over time, with a chart that makes trends obvious
+• Vaccination records with due-date reminders before they lapse
+• Vet visit write-ups — diagnosis, treatment, cost, and clinic — so nothing gets forgotten before the next appointment
+• An activity log, so you can see who logged what, and when
+
+REMINDERS THAT RESPECT YOUR TIME
+Get nudged for meals, doses, and upcoming vaccinations — and set quiet hours so they don't interrupt you at night.
+
+BUILT FOR MULTI-PET HOUSEHOLDS
+Dogs, cats, rabbits, birds, and more — each pet gets its own profile, its own schedule, and its own record.
+
+Petal is a record-keeping tool, not a substitute for professional veterinary care. Always consult a licensed veterinarian for anything about your pet's health.
+```
+(~1,450 characters — well under the limit; left un-padded on purpose)
+
+---
+
+## Google Play Console
+
+### Short description — 80 characters max
+```
+Track feeding, meds and vet visits — and share care with sitters, safely.
+```
+(73 characters)
+
+### Full description — 4000 characters max
+*Same copy as the App Store description above — Play doesn't have a separate keywords field, so the description itself is what carries search terms like "feeding schedule," "medication reminder," "pet sitter," and "vaccination tracker."*
+
+---
+
+## Notes
+
+- **Privacy Policy / Terms of Service / Support URLs** (both stores ask for these separately, not in the description body):
+  - `https://awb-labs.github.io/PawTrack/privacy-policy.html`
+  - `https://awb-labs.github.io/PawTrack/terms.html`
+  - `https://awb-labs.github.io/PawTrack/support.html`
+- The vet-care disclaimer at the end of the description is deliberate — Apple has rejected health-adjacent apps for implying medical advice, and it matches the disclaimer already in the Terms of Service.
+- If the feature set changes (documents/booking come back, Security tab returns, etc.), update the description before resubmitting — an inaccurate listing is itself a rejection risk.

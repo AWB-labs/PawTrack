@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Petal",
-    "slug": "petal",
+    "slug": "furry-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -98,6 +98,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "70f38497-a02b-4d1c-a2f4-fda59ad68eff"
+      }
+    },
+    "owner": "awb-expo"
   }
 }

@@ -44,7 +44,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { AuthAtmosphere, BrandMark } from '@/features/auth/AuthScaffold';
+import { AuthAtmosphere } from '@/features/auth/AuthScaffold';
 import { usePreferences } from '@/stores/preferences';
 import { useTheme } from '@/theme';
 import { Button, Column, Screen, Text, Touchable } from '@/ui';
@@ -316,13 +316,6 @@ export default function WelcomeScreen() {
       <AuthAtmosphere intensity={1.2} />
 
       <Screen padded={false} background="transparent" keyboardAvoiding={false}>
-        <Animated.View
-          entering={FadeIn.duration(t.motion.duration.slow)}
-          style={{ paddingHorizontal: t.gutter, paddingTop: t.spacing.sm }}
-        >
-          <BrandMark size={t.spacing.xxxl} />
-        </Animated.View>
-
         <Animated.ScrollView
           ref={(node) => {
             pagerRef.current = node;

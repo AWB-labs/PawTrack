@@ -166,7 +166,7 @@ export function Composer({
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       haptics.warn();
-      toast.warning('Petal can’t see your photos yet', {
+      toast.warning('Furry Tracker can’t see your photos yet', {
         description: 'Turn on photo access in Settings and they’ll be right here.',
       });
       return;

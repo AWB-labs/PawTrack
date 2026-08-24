@@ -85,7 +85,7 @@ const PAGES: readonly WelcomePage[] = [
     key: 'reminders',
     eyebrow: 'Nothing missed',
     headline: 'A nudge at exactly the right moment',
-    body: 'Petal knows dinner is at six and the joint tablet goes with it. You get a tap on the shoulder, not another list to check.',
+    body: 'Furry Tracker knows dinner is at six and the joint tablet goes with it. You get a tap on the shoulder, not another list to check.',
     Art: EmptyMedicine,
   },
   {
@@ -375,7 +375,7 @@ export default function WelcomeScreen() {
               hero
               fullWidth
               haptic="commit"
-              accessibilityHint="Sets up a new Petal account."
+              accessibilityHint="Sets up a new Furry Tracker account."
             />
             <Button
               label="I already have one"

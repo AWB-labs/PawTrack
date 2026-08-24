@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Petal",
+    "name": "Furry Tracker",
     "slug": "furry-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -25,11 +25,11 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "Petal uses the camera so you can take photos of your pets, scan a caregiver invite code, and capture vet documents.",
-        "NSPhotoLibraryUsageDescription": "Petal needs access to your photos so you can add pet pictures and attach health records.",
-        "NSPhotoLibraryAddUsageDescription": "Petal saves pet photos and health documents you export back to your library.",
-        "NSFaceIDUsageDescription": "Petal uses Face ID to unlock your pets' health records quickly and privately.",
-        "NSMicrophoneUsageDescription": "Petal uses the microphone when you record a video of your pet."
+        "NSCameraUsageDescription": "Furry Tracker uses the camera so you can take photos of your pets, scan a caregiver invite code, and capture vet documents.",
+        "NSPhotoLibraryUsageDescription": "Furry Tracker needs access to your photos so you can add pet pictures and attach health records.",
+        "NSPhotoLibraryAddUsageDescription": "Furry Tracker saves pet photos and health documents you export back to your library.",
+        "NSFaceIDUsageDescription": "Furry Tracker uses Face ID to unlock your pets' health records quickly and privately.",
+        "NSMicrophoneUsageDescription": "Furry Tracker uses the microphone when you record a video of your pet."
       }
     },
     "android": {
@@ -60,20 +60,20 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Petal uses Face ID to unlock your pets' health records quickly and privately."
+          "faceIDPermission": "Furry Tracker uses Face ID to unlock your pets' health records quickly and privately."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Petal needs access to your photos so you can add pet pictures and attach health records.",
-          "cameraPermission": "Petal uses the camera so you can take photos of your pets and capture vet documents."
+          "photosPermission": "Furry Tracker needs access to your photos so you can add pet pictures and attach health records.",
+          "cameraPermission": "Furry Tracker uses the camera so you can take photos of your pets and capture vet documents."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Petal uses the camera to scan caregiver invite codes and photograph vet documents."
+          "cameraPermission": "Furry Tracker uses the camera to scan caregiver invite codes and photograph vet documents."
         }
       ],
       [

@@ -197,7 +197,7 @@ export default function OnboardingDoneScreen() {
     <OnboardingScaffold
       step={4}
       eyebrow="All set"
-      title={name ? `Welcome to Petal, ${name}` : 'Welcome to Petal'}
+      title={name ? `Welcome to Furry Tracker, ${name}` : 'Welcome to Furry Tracker'}
       body="Here’s where that leaves you."
       primary={{
         label: 'Take me in',

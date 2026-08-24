@@ -484,7 +484,7 @@ export default function FeedingScreen() {
         <EmptyState
           illustration={<EmptyFeeding size={t.spacing.colossal * 2.4} />}
           headline={`${petName} doesn’t have a mealtime yet`}
-          body="Add one and Petal will nudge you at the right time, keep the portions straight, and build an appetite record your vet will thank you for."
+          body="Add one and Furry Tracker will nudge you at the right time, keep the portions straight, and build an appetite record your vet will thank you for."
           action={{
             label: 'Set up the first meal',
             icon: 'add-circle-outline',

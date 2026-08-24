@@ -216,7 +216,7 @@ export default function SignInScreen() {
 
   const onQuickUnlock = useCallback(async () => {
     if (!sensor) return;
-    const result = await biometrics.authenticate({ reason: 'Sign back in to Petal' });
+    const result = await biometrics.authenticate({ reason: 'Sign back in to Furry Tracker' });
     if (result.ok) {
       void attemptSignIn({ email: DEMO_ACCOUNTS[0].email, password: DEMO_PASSWORD });
       return;
@@ -256,7 +256,7 @@ export default function SignInScreen() {
       footer={
         <Row gap="xs" justify="center">
           <Text variant="footnote" color="textSecondary">
-            New to Petal?
+            New to Furry Tracker?
           </Text>
           <Touchable
             accessibilityRole="link"

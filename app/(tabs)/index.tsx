@@ -282,7 +282,7 @@ function TodayBoard() {
           <EmptyState
             illustration={<EmptyPets size={t.spacing.colossal * 3} />}
             headline="Your day starts with a pet"
-            body="Add your first one and Petal turns their meals, medicine and vet dates into a list that fills itself in every morning."
+            body="Add your first one and Furry Tracker turns their meals, medicine and vet dates into a list that fills itself in every morning."
             action={{
               label: 'Add a pet',
               icon: 'add',
@@ -597,7 +597,7 @@ function PetAlertBanner({ pet, onOpen }: { pet: Pet; onOpen: (path: string) => v
         message={
           overdueShot.core
             ? 'This one is a core vaccine — worth ringing the practice today.'
-            : 'Book it in and Petal will keep the next one on the calendar for you.'
+            : 'Book it in and Furry Tracker will keep the next one on the calendar for you.'
         }
         action={{
           label: 'Open vaccinations',

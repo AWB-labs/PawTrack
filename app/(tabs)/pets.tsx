@@ -233,7 +233,7 @@ export default function PetsScreen() {
         <EmptyState
           illustration={<EmptyPets size={t.spacing.colossal * 3} />}
           headline="Let’s meet your first pet"
-          body="Add them once and Petal keeps the meals, the medicine and the vet paperwork in one place — and lets you share it with a sitter when you need to."
+          body="Add them once and Furry Tracker keeps the meals, the medicine and the vet paperwork in one place — and lets you share it with a sitter when you need to."
           action={{
             label: 'Add a pet',
             icon: 'add',

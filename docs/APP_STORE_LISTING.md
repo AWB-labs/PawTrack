@@ -1,4 +1,4 @@
-# Petal — app store listing copy
+# Furry Tracker — app store listing copy
 
 Ready to paste into App Store Connect and Google Play Console. Character counts are
 shown next to every field with a hard limit — verify against the current store rules
@@ -33,7 +33,7 @@ dog,cat,sitter,caregiver,feeding,medication,vaccination,reminder,tracker,weight,
 
 ### Description — 4000 characters max
 ```
-Petal keeps everyone who looks after your pet on the same page.
+Furry Tracker keeps everyone who looks after your pet on the same page.
 
 Log what matters — feeding, medicine, weight, vaccinations, and vet visit write-ups — for every pet in your home, in one place instead of scattered notes and photos.
 
@@ -53,7 +53,7 @@ Get nudged for meals, doses, and upcoming vaccinations — and set quiet hours s
 BUILT FOR MULTI-PET HOUSEHOLDS
 Dogs, cats, rabbits, birds, and more — each pet gets its own profile, its own schedule, and its own record.
 
-Petal is a record-keeping tool, not a substitute for professional veterinary care. Always consult a licensed veterinarian for anything about your pet's health.
+Furry Tracker is a record-keeping tool, not a substitute for professional veterinary care. Always consult a licensed veterinarian for anything about your pet's health.
 ```
 (~1,450 characters — well under the limit; left un-padded on purpose)
 

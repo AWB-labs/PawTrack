@@ -57,7 +57,7 @@ import {
 
 /* ---------------------------------------------------------------- constants */
 
-const APP_NAME = Constants.expoConfig?.name ?? 'Petal';
+const APP_NAME = Constants.expoConfig?.name ?? 'Furry Tracker';
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 /** Where feedback goes. Matches the web origin the invite links already use. */
@@ -203,7 +203,7 @@ export default function AboutScreen() {
           <Banner
             tone="warning"
             icon="cloud-offline-outline"
-            title="Petal fell back to the demo household"
+            title="Furry Tracker fell back to the demo household"
             message={`Your Supabase details didn’t load, so nothing you change here is leaving this phone. ${source.fallbackReason}`}
           />
         </Animated.View>
@@ -252,7 +252,7 @@ export default function AboutScreen() {
             title="Demo data"
             icon="flask-outline"
             animate={false}
-            footer="Only here because Petal is running its offline demo. Connect a Supabase project and this row disappears — there’d be nothing safe to reset."
+            footer="Only here because Furry Tracker is running its offline demo. Connect a Supabase project and this row disappears — there’d be nothing safe to reset."
           >
             <SettingsRow
               icon="refresh-outline"
@@ -273,7 +273,7 @@ export default function AboutScreen() {
           title="Credits"
           icon="heart-outline"
           animate={false}
-          footer="Petal is made almost entirely of work other people gave away. The least it can do is say so."
+          footer="Furry Tracker is made almost entirely of work other people gave away. The least it can do is say so."
         >
           <SettingsRow
             icon="library-outline"

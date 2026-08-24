@@ -677,7 +677,7 @@ export function InviteQR({
           {code}
         </Text>
         <Text variant="caption" color="textTertiary" align="center">
-          {caption ?? 'Or type this code in Petal'}
+          {caption ?? 'Or type this code in Furry Tracker'}
         </Text>
       </Column>
 

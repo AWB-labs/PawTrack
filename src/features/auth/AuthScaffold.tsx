@@ -232,7 +232,7 @@ export function BrandMark({ size, wordmark = true, style }: BrandMarkProps) {
   const brandWash: readonly [string, string] = [t.color.primary, t.color.primaryHover];
 
   return (
-    <Row gap="md" style={style} accessible accessibilityRole="header" accessibilityLabel="Petal">
+    <Row gap="md" style={style} accessible accessibilityRole="header" accessibilityLabel="Furry Tracker">
       <Animated.View
         style={[
           t.elevation(2),
@@ -253,7 +253,7 @@ export function BrandMark({ size, wordmark = true, style }: BrandMarkProps) {
 
       {wordmark ? (
         <Text variant="title1" color="text">
-          Petal
+          Furry Tracker
         </Text>
       ) : null}
     </Row>

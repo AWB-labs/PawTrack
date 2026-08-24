@@ -201,7 +201,7 @@ let failure: FailureInjection = {
   enabled: false,
   rate: 1,
   scope: 'all',
-  message: 'We couldn’t reach Petal just then. Check your connection and try again.',
+  message: 'We couldn’t reach Furry Tracker just then. Check your connection and try again.',
 };
 
 /** Flip the mock into failing mode so error states can be demoed on a real device. */

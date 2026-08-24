@@ -97,11 +97,11 @@ const BREATH = 0.04;
 
 const DENIAL_COPY: Record<'camera' | 'library', { title: string; body: string }> = {
   camera: {
-    title: 'Petal can’t reach the camera yet',
+    title: 'Furry Tracker can’t reach the camera yet',
     body: 'Your phone is holding the camera back. Turn it on in Settings and we’ll be ready when you are — or pick a photo you’ve already taken.',
   },
   library: {
-    title: 'Petal can’t see your photos yet',
+    title: 'Furry Tracker can’t see your photos yet',
     body: 'Your phone is holding your library back. Turn on photo access in Settings, or take a fresh picture instead.',
   },
 };

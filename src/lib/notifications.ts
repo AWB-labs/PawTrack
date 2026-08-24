@@ -353,7 +353,7 @@ export function permissionCopy(outcome: PermissionOutcome): {
   if (outcome.reason === 'unsupported') {
     return {
       title: 'Reminders aren’t available here',
-      body: 'This device can’t schedule notifications. Everything still shows on the Today screen when you open Petal.',
+      body: 'This device can’t schedule notifications. Everything still shows on the Today screen when you open Furry Tracker.',
       action: 'none',
       actionLabel: null,
     };
@@ -362,13 +362,13 @@ export function permissionCopy(outcome: PermissionOutcome): {
   return outcome.canAskAgain
     ? {
         title: 'Never miss a dose',
-        body: 'Let Petal send reminders and we’ll nudge you at feeding time, dose time and the day before a vet visit.',
+        body: 'Let Furry Tracker send reminders and we’ll nudge you at feeding time, dose time and the day before a vet visit.',
         action: 'request',
         actionLabel: 'Turn on reminders',
       }
     : {
         title: 'Reminders are switched off',
-        body: 'Notifications are off for Petal in your phone’s settings. Turn them back on and every schedule you’ve set starts working again.',
+        body: 'Notifications are off for Furry Tracker in your phone’s settings. Turn them back on and every schedule you’ve set starts working again.',
         action: 'openSettings',
         actionLabel: 'Open settings',
       };
@@ -403,7 +403,7 @@ function hash(value: string): number {
 function pick<C>(variants: readonly ((context: C) => Copy)[], entityId: string, context: C): Copy {
   const seed = getDayOfYear(new Date()) + hash(entityId);
   const variant = variants[seed % variants.length] ?? variants[0];
-  return variant ? variant(context) : { title: 'Petal', body: '' };
+  return variant ? variant(context) : { title: 'Furry Tracker', body: '' };
 }
 
 /** Small numbers read better as words in a sentence. */

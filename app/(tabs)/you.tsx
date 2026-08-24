@@ -505,7 +505,7 @@ export default function YouScreen() {
 
       <ConfirmSheet
         controller={signOutSheet}
-        title="Sign out of Petal?"
+        title="Sign out of Furry Tracker?"
         body="Everything you’ve logged stays exactly where it is. You’ll just need to sign in again to see it."
         confirmLabel="Sign out"
         cancelLabel="Stay signed in"
@@ -546,7 +546,7 @@ function ProfileHero({
   const joined = useMemo(() => {
     const date = new Date(memberSince);
     if (Number.isNaN(date.getTime())) return null;
-    return `With Petal since ${date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
+    return `With Furry Tracker since ${date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
   }, [memberSince]);
 
   return (

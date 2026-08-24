@@ -658,7 +658,7 @@ export default function PetProfileScreen() {
       <ConfirmSheet
         controller={deleteSheet}
         title={`Delete ${pet.name}?`}
-        body={`This removes ${possessive(pet.name)} whole record from Petal — for you and for everyone you've shared them with. Nothing is archived, and there is no undo.`}
+        body={`This removes ${possessive(pet.name)} whole record from Furry Tracker — for you and for everyone you've shared them with. Nothing is archived, and there is no undo.`}
         confirmLabel={`Yes, delete ${pet.name}`}
         cancelLabel={`Keep ${pet.name}`}
         icon="trash-outline"

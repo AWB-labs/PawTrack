@@ -83,7 +83,7 @@ export function supabaseHost(): string | null {
 export class SupabaseConfigError extends Error {
   constructor() {
     super(
-      'Petal is running on demo data. Add EXPO_PUBLIC_SUPABASE_URL and ' +
+      'Furry Tracker is running on demo data. Add EXPO_PUBLIC_SUPABASE_URL and ' +
         'EXPO_PUBLIC_SUPABASE_ANON_KEY to .env and restart to connect the live backend.',
     );
     this.name = 'SupabaseConfigError';

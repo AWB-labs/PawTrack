@@ -341,7 +341,7 @@ export default function WeightScreen() {
         <Touchable
           accessibilityRole="button"
           accessibilityLabel={`Switch to ${unit === 'kg' ? 'pounds' : 'kilograms'}`}
-          accessibilityHint="Changes how weights are shown across Petal."
+          accessibilityHint="Changes how weights are shown across Furry Tracker."
           haptic="none"
           onPress={toggleUnit}
           pressScale="small"

@@ -413,7 +413,7 @@ export default function MedicineScreen() {
           headline={`${petName} isn’t on any medication`}
           body={
             canEdit.allowed
-              ? 'If that changes, add the prescription here and Petal will handle the dose times, the reminders and the refill nudge.'
+              ? 'If that changes, add the prescription here and Furry Tracker will handle the dose times, the reminders and the refill nudge.'
               : `Nothing has been prescribed for ${petName}. If that changes, the owner will add it here.`
           }
           action={

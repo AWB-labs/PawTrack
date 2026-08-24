@@ -307,7 +307,7 @@ function EditPetForm({ pet }: { pet: Pet }) {
         onSuccess: (saved) => {
           haptics.success();
           toast.success(`${possessive(saved.name)} profile is updated`, {
-            description: 'Everywhere in Petal, straight away.',
+            description: 'Everywhere in Furry Tracker, straight away.',
           });
           router.back();
         },
@@ -392,7 +392,7 @@ function EditPetForm({ pet }: { pet: Pet }) {
       <Animated.View entering={enter(0)} style={{ gap: t.spacing.md }}>
         <SectionHeader
           title="Who they are"
-          subtitle="The name and species drive their colour and everything Petal says about them."
+          subtitle="The name and species drive their colour and everything Furry Tracker says about them."
           icon="paw-outline"
           iconColor="primaryText"
           first

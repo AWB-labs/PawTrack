@@ -1,0 +1,101 @@
+# Build the iOS app on a macOS runner instead of on EAS.
+#
+# Why this exists: the awb-expo account's free-plan iOS builds are shared across
+# every project on it, so Petal can be locked out by a busy week on another app.
+# `eas build --local` does the same build with the same tooling and the same
+# credentials, on compute we supply — and local builds are not counted against
+# the plan's build quota.
+#
+# PawTrack is a public repository, and GitHub does not bill Actions minutes for
+# public repositories on any runner, macOS included. So this is free and
+# unmetered here. On a private repo it would not be: macOS minutes bill at 10x,
+# which turns the 2,000-minute free allowance into roughly six iOS builds a
+# month.
+#
+# ── Setup, once ──────────────────────────────────────────────────────────────
+#
+#   1. Create a robot access token at
+#      https://expo.dev/accounts/awb-expo/settings/access-tokens
+#   2. Add it as a repository secret named EXPO_TOKEN
+#      (Settings → Secrets and variables → Actions → New repository secret).
+#   3. Make sure the iOS credentials exist first — a non-interactive build can
+#      use them but cannot create them:
+#
+#        npx eas-cli credentials:configure-build -p ios -e production
+#
+#      That is an API call, not a build, so it costs nothing against the quota
+#      and runs fine from Windows.
+#
+# ── Running it ───────────────────────────────────────────────────────────────
+#
+#   Actions → iOS build → Run workflow. The .ipa lands as an artifact on the
+#   run. Submit it from anywhere with:
+#
+#        npx eas-cli submit -p ios --path ./Petal.ipa
+#
+# The artifact is downloadable by anyone who can read this repo. That is fine:
+# an .ipa carries the distribution provisioning profile but never the signing
+# key, and the only secrets compiled into it are the EXPO_PUBLIC_ Supabase URL
+# and anon key, which ship in every copy of the app by design. Retention is
+# still capped below rather than left at the 90-day default.
+
+name: iOS build
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Which eas.json build profile to use
+        type: choice
+        default: production
+        options:
+          - production
+          - preview
+
+jobs:
+  build:
+    name: eas build --local (${{ inputs.profile }})
+    runs-on: macos-latest
+    # A cold iOS build — pods, Hermes, the archive — runs well past the 60
+    # minute default. Pin the runner to a macos-NN label if a future default
+    # ships an Xcode that SDK 54 hasn't caught up with.
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` rather than `install`: the lockfile is the contract, and a
+      # resolution that drifts on CI is the one thing worse than a failed build.
+      - name: Install dependencies
+        run: npm ci
+
+      # Installed directly rather than via a third-party action, so there is one
+      # fewer version to keep in step.
+      - name: Install EAS CLI
+        run: npm install -g eas-cli@latest
+
+      - name: Build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas build \
+            --platform ios \
+            --profile "${{ inputs.profile }}" \
+            --local \
+            --non-interactive \
+            --output "$RUNNER_TEMP/Petal.ipa"
+
+      - name: Upload the .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: petal-ios-${{ inputs.profile }}-${{ github.sha }}
+          path: ${{ runner.temp }}/Petal.ipa
+          if-no-files-found: error
+          retention-days: 14

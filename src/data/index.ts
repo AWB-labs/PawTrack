@@ -87,7 +87,7 @@ export function describeDataSource(): DataSourceInfo {
       host,
       label: host ? `Live · ${host}` : 'Live',
       detail:
-        'Furry Tracker is talking to your Supabase project. Changes sync to everyone who shares a pet with you.',
+        'Petal is talking to your Supabase project. Changes sync to everyone who shares a pet with you.',
       fallbackReason: null,
       canResetDemoData: false,
     };
@@ -98,8 +98,8 @@ export function describeDataSource(): DataSourceInfo {
     host: null,
     label: 'Demo data',
     detail: fallbackReason
-      ? 'Your Supabase details didn’t load, so Furry Tracker fell back to the demo household. Everything you change stays on this device.'
-      : 'Furry Tracker is running the offline demo household. Everything you change stays on this device.',
+      ? 'Your Supabase details didn’t load, so Petal fell back to the demo household. Everything you change stays on this device.'
+      : 'Petal is running the offline demo household. Everything you change stays on this device.',
     fallbackReason,
     canResetDemoData: typeof adapter.resetDemoData === 'function',
   };

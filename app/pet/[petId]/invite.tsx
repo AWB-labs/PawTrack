@@ -632,7 +632,7 @@ export default function InviteScreen() {
               autoComplete="email"
               leadingIcon="mail-outline"
               error={emailError}
-              helper="Only so you remember who it went to — Furry Tracker doesn’t email them."
+              helper="Only so you remember who it went to — Petal doesn’t email them."
               returnKeyType="done"
             />
 

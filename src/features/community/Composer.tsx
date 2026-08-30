@@ -57,11 +57,13 @@ import { usePets } from '@/data/queries/usePets';
 import type { ID, Pet, PostWithAuthor } from '@/data/types';
 import { possessive } from '@/lib/format';
 import haptics from '@/lib/haptics';
+import { moderateText, type ModerationResult } from '@/lib/moderation';
 import { useMyRole, usePermission } from '@/rbac/usePermission';
 import { useCurrentUser } from '@/stores/session';
 import { spring, useTheme, type Theme } from '@/theme';
 import {
   Avatar,
+  Banner,
   Button,
   ConfirmSheet,
   Icon,
@@ -143,6 +145,17 @@ export function Composer({
   const [body, setBody] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const discard = useSheet();
+  const reconsider = useSheet();
+
+  /**
+   * The client half of the content filter.
+   *
+   * Run on submit rather than on every keystroke: a filter that lights up
+   * mid-word tells somebody what it is looking for, and correcting a person
+   * before they have finished the sentence is a bad way to be right. `block`
+   * refuses outright; `warn` asks once and takes yes for an answer.
+   */
+  const [refusal, setRefusal] = useState<ModerationResult | null>(null);
 
   const pets = useMemo(() => petsQuery.data ?? [], [petsQuery.data]);
   const groups = useMemo(() => groupsQuery.data ?? [], [groupsQuery.data]);
@@ -166,7 +179,7 @@ export function Composer({
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       haptics.warn();
-      toast.warning('Furry Tracker can’t see your photos yet', {
+      toast.warning('Petal can’t see your photos yet', {
         description: 'Turn on photo access in Settings and they’ll be right here.',
       });
       return;
@@ -200,11 +213,30 @@ export function Composer({
 
   /* ---- submit ---------------------------------------------------------- */
 
+  const send = useCallback(() => {
+    haptics.commit();
+    setRefusal(null);
+    onSubmit({ petId, groupId, body: trimmed, imageUrls: images });
+  }, [groupId, images, onSubmit, petId, trimmed]);
+
   const submit = useCallback(() => {
     if (!canPost) return;
-    haptics.commit();
-    onSubmit({ petId, groupId, body: trimmed, imageUrls: images });
-  }, [canPost, groupId, images, onSubmit, petId, trimmed]);
+
+    const verdict = moderateText(trimmed);
+    if (verdict.verdict === 'block') {
+      setRefusal(verdict);
+      haptics.error();
+      return;
+    }
+    if (verdict.verdict === 'warn') {
+      setRefusal(verdict);
+      haptics.warn();
+      reconsider.open();
+      return;
+    }
+
+    send();
+  }, [canPost, reconsider, send, trimmed]);
 
   /** Half-written posts are worth one question before they disappear. */
   const requestCancel = useCallback(() => {
@@ -229,6 +261,7 @@ export function Composer({
       likeCount: 0,
       commentCount: 0,
       likedByMe: false,
+      hiddenAt: null,
       // The adapter stamps this from the membership; mirroring it here means the
       // sitter sees the badge before they commit, not after.
       postedWhileSitting: role === 'caregiver',
@@ -299,6 +332,16 @@ export function Composer({
       style={style}
       contentContainerStyle={{ gap: t.spacing.xl, paddingBottom: t.spacing.giant }}
     >
+      {refusal && refusal.verdict === 'block' ? (
+        <Banner
+          tone="danger"
+          title="We can’t post that"
+          message={refusal.message ?? 'That breaks the community rules.'}
+          onDismiss={() => setRefusal(null)}
+          dismissLabel="Dismiss this message"
+        />
+      ) : null}
+
       {/* ------------------------------------------------------ posting as */}
 
       <Animated.View entering={enterAt(t, 0)} style={{ gap: t.spacing.sm }}>
@@ -483,6 +526,18 @@ export function Composer({
           <PreviewSwap hasSomething={hasSomething} speaker={speaker} post={preview} />
         </Animated.View>
       ) : null}
+
+      <ConfirmSheet
+        controller={reconsider}
+        title="Have another look?"
+        body={refusal?.message ?? 'This reads a little sharper than it might have meant to.'}
+        confirmLabel="Post it anyway"
+        cancelLabel="Let me edit it"
+        tone="primary"
+        icon="alert-circle-outline"
+        onConfirm={send}
+        onCancel={() => setRefusal(null)}
+      />
 
       <ConfirmSheet
         controller={discard}

@@ -403,7 +403,7 @@ export function toUserMessage(error: unknown): UserMessage {
     case 'offline':
       return {
         title: 'You’re offline',
-        body: 'Furry Tracker can’t reach the network right now. Nothing was lost — reconnect and try again.',
+        body: 'Petal can’t reach the network right now. Nothing was lost — reconnect and try again.',
         action: 'retry',
         actionLabel: 'Try again',
         retryable: true,
@@ -412,7 +412,7 @@ export function toUserMessage(error: unknown): UserMessage {
 
     case 'network':
       return {
-        title: 'Couldn’t reach Furry Tracker',
+        title: 'Couldn’t reach Petal',
         body: 'The connection dropped somewhere along the way. One more go usually does it.',
         action: 'retry',
         actionLabel: 'Try again',
@@ -500,7 +500,7 @@ export function toUserMessage(error: unknown): UserMessage {
     case 'unsupported':
       return {
         title: 'Not available on this device',
-        body: 'Your phone doesn’t support that one. Everything else in Furry Tracker works as normal.',
+        body: 'Your phone doesn’t support that one. Everything else in Petal works as normal.',
         action: 'none',
         actionLabel: null,
         retryable: false,
@@ -569,7 +569,7 @@ function authMessage(code: AuthErrorCode): UserMessage {
     case 'session-expired':
       return {
         title: 'You’ve been signed out',
-        body: 'Furry Tracker signs you out after a long gap to keep your pets’ records private. Sign back in to carry on.',
+        body: 'Petal signs you out after a long gap to keep your pets’ records private. Sign back in to carry on.',
         action: 'signIn',
         actionLabel: 'Sign in',
         retryable: false,

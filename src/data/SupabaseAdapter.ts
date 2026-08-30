@@ -42,12 +42,14 @@ import {
   type MembershipStatus,
   type PresetId,
 } from '../rbac/permissions';
+import { assertPublishable } from '../lib/moderation';
 import type { SpeciesKey } from '../theme/tokens';
 import {
   assertCan,
   membershipFor,
   type ActorContext,
   type AppointmentInput,
+  type BlockInput,
   type DataAdapter,
   type DocumentInput,
   type FeedScope,
@@ -62,6 +64,7 @@ import {
   type PetInput,
   type PetPatch,
   type PostInput,
+  type ReportInput,
   type SignInInput,
   type SignUpInput,
   type VaccinationInput,
@@ -81,9 +84,11 @@ import type {
   Appointment,
   AppointmentStatus,
   AppointmentType,
+  BlockedAccount,
   CareTask,
   Comment,
   CommentWithAuthor,
+  ContentReport,
   DateOnly,
   DaySummary,
   DocumentKind,
@@ -105,6 +110,9 @@ import type {
   PortionUnit,
   Post,
   PostWithAuthor,
+  ReportReason,
+  ReportStatus,
+  ReportTargetKind,
   Session,
   Sex,
   TaskKind,
@@ -159,7 +167,7 @@ export class DataError extends Error {
 /** No usable connection. The only error the query layer should auto-retry. */
 export class NetworkError extends DataError {
   constructor(detail?: string | null, cause?: unknown) {
-    super('network', "We couldn't reach Furry Tracker just now. Check your connection and try again.", {
+    super('network', "We couldn't reach Petal just now. Check your connection and try again.", {
       retryable: true,
       detail,
       cause,
@@ -437,6 +445,8 @@ type ProfileRow = {
   display_name: string;
   avatar_url: string | null;
   bio: string | null;
+  terms_accepted_at: string | null;
+  terms_version: number | null;
   created_at: string;
 };
 
@@ -679,6 +689,7 @@ type PostRow = {
   like_count: number;
   comment_count: number;
   posted_while_sitting: boolean;
+  hidden_at: string | null;
   created_at: string;
   author: ProfileRow | null;
   group: GroupRow | null;
@@ -690,8 +701,29 @@ type CommentRow = {
   author_id: string;
   body: string;
   like_count: number;
+  hidden_at: string | null;
   created_at: string;
   author: ProfileRow | null;
+};
+
+type ReportRow = {
+  id: string;
+  reporter_id: string;
+  target_kind: ReportTargetKind;
+  target_id: string;
+  target_author_id: string | null;
+  reason: ReportReason;
+  details: string | null;
+  snapshot: string | null;
+  status: ReportStatus;
+  created_at: string;
+  resolved_at: string | null;
+};
+
+type BlockRow = {
+  blocked_id: string;
+  created_at: string;
+  blocked: ProfileRow | null;
 };
 
 type CareTaskRow = {
@@ -766,7 +798,8 @@ type PeekInviteJson = {
 
 /* ============================================================ column lists */
 
-const PROFILE_COLUMNS = 'id, email, display_name, avatar_url, bio, created_at';
+const PROFILE_COLUMNS =
+  'id, email, display_name, avatar_url, bio, terms_accepted_at, terms_version, created_at';
 
 const PET_COLUMNS =
   'id, owner_id, name, species, breed, birthday, approximate_age_months, sex, neutered, ' +
@@ -822,12 +855,19 @@ const GROUP_COLUMNS = 'id, name, slug, kind, description, member_count, post_cou
 
 const POST_COLUMNS =
   'id, author_id, pet_id, group_id, body, image_urls, like_count, comment_count, ' +
-  `posted_while_sitting, created_at, author:profiles!posts_author_id_fkey(${PROFILE_COLUMNS}), ` +
+  'posted_while_sitting, hidden_at, created_at, ' +
+  `author:profiles!posts_author_id_fkey(${PROFILE_COLUMNS}), ` +
   `group:groups!posts_group_id_fkey(${GROUP_COLUMNS})`;
 
 const COMMENT_COLUMNS =
-  'id, post_id, author_id, body, like_count, created_at, ' +
+  'id, post_id, author_id, body, like_count, hidden_at, created_at, ' +
   `author:profiles!comments_author_id_fkey(${PROFILE_COLUMNS})`;
+
+const REPORT_COLUMNS =
+  'id, reporter_id, target_kind, target_id, target_author_id, reason, details, snapshot, ' +
+  'status, created_at, resolved_at';
+
+const BLOCK_COLUMNS = `blocked_id, created_at, blocked:profiles!user_blocks_blocked_id_fkey(${PROFILE_COLUMNS})`;
 
 /* ================================================================== mappers */
 
@@ -838,6 +878,8 @@ function mapUser(row: ProfileRow): User {
     displayName: row.display_name,
     avatarUrl: row.avatar_url,
     bio: row.bio,
+    termsAcceptedAt: row.terms_accepted_at ? iso(row.terms_accepted_at) : null,
+    termsVersion: row.terms_version,
     createdAt: iso(row.created_at),
   };
 }
@@ -1132,6 +1174,7 @@ function mapPost(row: PostRow, likedByMe: boolean): Post {
     commentCount: row.comment_count,
     likedByMe,
     postedWhileSitting: row.posted_while_sitting,
+    hiddenAt: row.hidden_at ? iso(row.hidden_at) : null,
     createdAt: iso(row.created_at),
   };
 }
@@ -1144,7 +1187,33 @@ function mapComment(row: CommentRow, likedByMe: boolean): Comment {
     body: row.body,
     likeCount: row.like_count,
     likedByMe,
+    hiddenAt: row.hidden_at ? iso(row.hidden_at) : null,
     createdAt: iso(row.created_at),
+  };
+}
+
+function mapReport(row: ReportRow): ContentReport {
+  return {
+    id: row.id,
+    reporterId: row.reporter_id,
+    targetKind: row.target_kind,
+    targetId: row.target_id,
+    targetAuthorId: row.target_author_id,
+    reason: row.reason,
+    details: row.details,
+    snapshot: row.snapshot,
+    status: row.status,
+    createdAt: iso(row.created_at),
+    resolvedAt: row.resolved_at ? iso(row.resolved_at) : null,
+  };
+}
+
+function mapBlock(row: BlockRow): BlockedAccount {
+  return {
+    userId: row.blocked_id,
+    displayName: row.blocked?.display_name ?? 'Someone who has left',
+    avatarUrl: row.blocked?.avatar_url ?? null,
+    blockedAt: iso(row.created_at),
   };
 }
 
@@ -1154,6 +1223,8 @@ const DELETED_USER: Omit<User, 'id'> = {
   displayName: 'Someone',
   avatarUrl: null,
   bio: null,
+  termsAcceptedAt: null,
+  termsVersion: null,
   createdAt: new Date(0).toISOString(),
 };
 
@@ -2567,6 +2638,10 @@ export class SupabaseAdapter implements DataAdapter {
         displayName: json.owner.displayName,
         avatarUrl: json.owner.avatarUrl,
         bio: json.owner.bio,
+        // The invite preview RPC deliberately returns the thinnest possible
+        // owner — a name and a face. Standing is nobody's business but theirs.
+        termsAcceptedAt: null,
+        termsVersion: null,
         createdAt: iso(json.owner.createdAt),
       },
     };
@@ -2791,6 +2866,10 @@ export class SupabaseAdapter implements DataAdapter {
 
   async createPost(ctx: ActorContext, input: PostInput): Promise<Post> {
     if (input.petId) assertCan(ctx, input.petId, 'community.post');
+    // Third of three: the composer checked, this checks, and `posts_moderate`
+    // in 0008 checks. Only the last one is a boundary; this one is here so the
+    // person gets the specific sentence rather than the database's general one.
+    assertPublishable(input.body);
 
     const result = await this.sb
       .from('posts')
@@ -2867,6 +2946,8 @@ export class SupabaseAdapter implements DataAdapter {
   }
 
   async addComment(ctx: ActorContext, postId: ID, body: string): Promise<Comment> {
+    assertPublishable(body);
+
     const result = await this.sb
       .from('comments')
       .insert({ post_id: postId, author_id: ctx.userId, body })
@@ -2932,6 +3013,148 @@ export class SupabaseAdapter implements DataAdapter {
 
     const refreshed = await this.sb.from('groups').select(GROUP_COLUMNS).eq('id', groupId).single();
     return mapGroup(unwrapOne<GroupRow>(refreshed, { subject: 'group' }), joined);
+  }
+
+  /* ----------------------------------------------------------- moderation */
+
+  /**
+   * File a flag.
+   *
+   * Nothing here decides whether the content comes down — `petal_apply_report`
+   * does, on the way in, hiding the target on the first report for the severe
+   * categories and on the second for everything else. What this *does*
+   * guarantee is that the reporter stops seeing it either way, because the
+   * posts and comments select policies exclude anything you have reported.
+   *
+   * The unique index on (reporter, kind, target) makes reporting twice a
+   * no-op rather than an error, which is why the conflict is swallowed and the
+   * existing report read back: a second tap should say "we've got it", not
+   * "you already did that".
+   */
+  async reportContent(ctx: ActorContext, input: ReportInput): Promise<ContentReport> {
+    const payload = {
+      reporter_id: ctx.userId,
+      target_kind: input.targetKind,
+      target_id: input.targetId,
+      target_author_id: input.targetAuthorId,
+      reason: input.reason,
+      details: input.details?.trim() ? input.details.trim() : null,
+      snapshot: input.snapshot ?? null,
+    };
+
+    const inserted = await this.sb
+      .from('content_reports')
+      .insert(payload)
+      .select(REPORT_COLUMNS)
+      .single();
+
+    // Reports are write-once by design: `content_reports` has an INSERT policy
+    // and a SELECT policy and nothing else, so nobody can quietly rewrite the
+    // reason on a report already in the queue. That makes the second tap a
+    // unique-violation rather than an upsert, and a second tap deserves "we've
+    // got it" — so the existing report is read back instead.
+    if (!inserted.error) return mapReport(unwrapOne<ReportRow>(inserted, { subject: 'report' }));
+    if (inserted.error.code !== '23505') {
+      throw mapPostgrestError(inserted.error, { subject: 'report' });
+    }
+
+    const existing = await this.sb
+      .from('content_reports')
+      .select(REPORT_COLUMNS)
+      .eq('reporter_id', ctx.userId)
+      .eq('target_kind', input.targetKind)
+      .eq('target_id', input.targetId)
+      .single();
+
+    return mapReport(unwrapOne<ReportRow>(existing, { subject: 'report' }));
+  }
+
+  async listMyReports(ctx: ActorContext): Promise<ContentReport[]> {
+    const result = await this.sb
+      .from('content_reports')
+      .select(REPORT_COLUMNS)
+      .eq('reporter_id', ctx.userId)
+      .order('created_at', { ascending: false });
+
+    return unwrapList<ReportRow>(result, { subject: 'report' }).map(mapReport);
+  }
+
+  async listBlockedAccounts(ctx: ActorContext): Promise<BlockedAccount[]> {
+    const result = await this.sb
+      .from('user_blocks')
+      .select(BLOCK_COLUMNS)
+      .eq('blocker_id', ctx.userId)
+      .order('created_at', { ascending: false });
+
+    return unwrapList<BlockRow>(result, { subject: 'profile' }).map(mapBlock);
+  }
+
+  /**
+   * Block, and tell us why.
+   *
+   * The report goes first and is not allowed to fail the block. Somebody who
+   * has just been harassed is not in a mood to retry a failed request, and a
+   * block that didn't take because a report didn't file would be the worst of
+   * both. `petal_is_blocked` is symmetric, so the row written here removes each
+   * account from the other's feed on the next read — which is the same read the
+   * query layer triggers the moment this resolves.
+   */
+  async blockUser(ctx: ActorContext, input: BlockInput): Promise<BlockedAccount> {
+    if (input.reason && input.contextKind && input.contextId) {
+      await this.reportContent(ctx, {
+        targetKind: input.contextKind,
+        targetId: input.contextId,
+        targetAuthorId: input.userId,
+        reason: input.reason,
+        details: input.details ?? null,
+        snapshot: input.snapshot ?? null,
+      }).catch((error: unknown) => {
+        if (__DEV__) console.warn('[petal] block filed without its report', error);
+      });
+    }
+
+    // Same reasoning as `reportContent`: `user_blocks` is insert-or-delete only,
+    // so blocking somebody you have already blocked is a unique violation and
+    // means the block is already in place — which is the outcome asked for.
+    const written = await this.sb
+      .from('user_blocks')
+      .insert({ blocker_id: ctx.userId, blocked_id: input.userId, reason: input.reason ?? null });
+
+    if (written.error && written.error.code !== '23505') {
+      unwrapVoid(written, { subject: 'profile' });
+    }
+
+    const result = await this.sb
+      .from('user_blocks')
+      .select(BLOCK_COLUMNS)
+      .eq('blocker_id', ctx.userId)
+      .eq('blocked_id', input.userId)
+      .single();
+
+    return mapBlock(unwrapOne<BlockRow>(result, { subject: 'profile' }));
+  }
+
+  async unblockUser(ctx: ActorContext, userId: ID): Promise<void> {
+    const result = await this.sb
+      .from('user_blocks')
+      .delete()
+      .eq('blocker_id', ctx.userId)
+      .eq('blocked_id', userId);
+
+    unwrapVoid(result, { subject: 'profile' });
+  }
+
+  /* ---------------------------------------------------------------- legal */
+
+  async acceptTerms(ctx: ActorContext, version: number): Promise<User> {
+    const result = await this.sb
+      .from('profiles')
+      .update({ terms_accepted_at: new Date().toISOString(), terms_version: version })
+      .eq('id', ctx.userId)
+      .select(PROFILE_COLUMNS)
+      .single();
+
+    return mapUser(unwrapOne<ProfileRow>(result, { subject: 'profile' }));
   }
 
   /* ---------------------------------------------------------------- users */

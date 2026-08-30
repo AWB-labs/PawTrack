@@ -44,13 +44,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useFeed, useGroups } from '@/data/queries/useCommunity';
+import { useDeletePost, useFeed, useGroups } from '@/data/queries/useCommunity';
 import { usePets } from '@/data/queries/usePets';
 import type { Group, ID, PostWithAuthor } from '@/data/types';
 import { CommentSheet } from '@/features/community/CommentSheet';
 import { GroupCard } from '@/features/community/GroupCard';
 import { GroupChip } from '@/features/community/GroupChip';
 import { PostCard } from '@/features/community/PostCard';
+import { useContentSafety } from '@/features/community/SafetySheets';
 import { toHref } from '@/lib/deeplinks';
 import { useCurrentUser } from '@/stores/session';
 import { spring, useTheme } from '@/theme';
@@ -159,6 +160,8 @@ function CommunityFeed() {
 
   const listRef = useRef<FlatList<PostWithAuthor> | null>(null);
   const comments = useSheet();
+  const safety = useContentSafety();
+  const removePost = useDeletePost();
 
   const all = useMemo(() => feed.data ?? [], [feed.data]);
   const groups = useMemo(() => groupsQuery.data ?? [], [groupsQuery.data]);
@@ -251,6 +254,26 @@ function CommunityFeed() {
     [comments],
   );
 
+  /**
+   * The overflow menu, filled in from the row it was opened on. `snapshot` is
+   * the post's own words rather than a reference to it, because a report has to
+   * stay reviewable after the post it names has been taken down.
+   */
+  const openSafety = useCallback(
+    (post: PostWithAuthor) => {
+      safety.open({
+        kind: 'post',
+        id: post.id,
+        authorId: post.authorId,
+        authorName: post.author.displayName,
+        snapshot: post.body,
+        mine: me !== null && post.authorId === me.id,
+        onDelete: () => removePost.mutate(post.id),
+      });
+    },
+    [me, removePost, safety],
+  );
+
   const changeFilter = useCallback((next: FeedFilter) => {
     setFilter(next);
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -287,11 +310,12 @@ function CommunityFeed() {
         index={index < STAGGER_CAP ? index : 0}
         onPress={() => openPost(item.id)}
         onComment={() => openComments(item)}
+        onMore={() => openSafety(item)}
         onOpenImage={() => openPost(item.id)}
         onOpenGroup={openGroup}
       />
     ),
-    [openComments, openGroup, openPost],
+    [openComments, openGroup, openPost, openSafety],
   );
 
   const keyExtractor = useCallback((post: PostWithAuthor) => post.id, []);
@@ -388,6 +412,8 @@ function CommunityFeed() {
         postId={commentingOn?.id ?? null}
         subject={commentingOn?.pet?.name ?? commentingOn?.author.displayName ?? 'this post'}
       />
+
+      {safety.element}
     </>
   );
 }

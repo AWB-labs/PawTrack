@@ -27,7 +27,9 @@ import { isMockData } from '@/data';
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '@/data/mock/MockAdapter';
 import { AuthScaffold } from '@/features/auth/AuthScaffold';
 import { PasswordField } from '@/features/auth/PasswordField';
+import { LEGAL_URLS } from '@/features/legal/agreement';
 import biometrics, { type BiometricAvailability } from '@/lib/biometrics';
+import { openExternal, toHref } from '@/lib/deeplinks';
 import { toUserMessage, type UserMessage } from '@/lib/errors';
 import haptics from '@/lib/haptics';
 import { usePreferences } from '@/stores/preferences';
@@ -216,7 +218,7 @@ export default function SignInScreen() {
 
   const onQuickUnlock = useCallback(async () => {
     if (!sensor) return;
-    const result = await biometrics.authenticate({ reason: 'Sign back in to Furry Tracker' });
+    const result = await biometrics.authenticate({ reason: 'Sign back in to Petal' });
     if (result.ok) {
       void attemptSignIn({ email: DEMO_ACCOUNTS[0].email, password: DEMO_PASSWORD });
       return;
@@ -254,22 +256,62 @@ export default function SignInScreen() {
         </Touchable>
       }
       footer={
-        <Row gap="xs" justify="center">
-          <Text variant="footnote" color="textSecondary">
-            New to Furry Tracker?
-          </Text>
-          <Touchable
-            accessibilityRole="link"
-            accessibilityLabel="Create an account"
-            haptic="tap"
-            onPress={() => router.replace('/sign-up')}
-            pressScale="small"
-          >
-            <Text variant="buttonSmall" color="primaryText">
-              Create an account
+        <Column gap="md">
+          {/* Stated on the way *in*, not only on the way up. Signing back in is
+              an agreement to the current rules, and somebody whose account
+              predates them meets the gate on the other side of this button. */}
+          <Column gap="xs" align="center">
+            <Text variant="caption" color="textTertiary" align="center">
+              Signing in means you agree to our terms and community rules.
             </Text>
-          </Touchable>
-        </Row>
+            <Row gap="md">
+              <Touchable
+                accessibilityRole="link"
+                accessibilityLabel="Read the terms of use"
+                haptic="tap"
+                onPress={() => void openExternal(LEGAL_URLS.terms)}
+                pressScale="small"
+                style={{ paddingVertical: t.spacing.xxs }}
+              >
+                <Text variant="caption" color="primaryText">
+                  Terms of Use
+                </Text>
+              </Touchable>
+              <Text variant="caption" color="textFaint">
+                ·
+              </Text>
+              <Touchable
+                accessibilityRole="link"
+                accessibilityLabel="Read the community rules"
+                haptic="tap"
+                onPress={() => void openExternal(LEGAL_URLS.guidelines)}
+                pressScale="small"
+                style={{ paddingVertical: t.spacing.xxs }}
+              >
+                <Text variant="caption" color="primaryText">
+                  Community Rules
+                </Text>
+              </Touchable>
+            </Row>
+          </Column>
+
+          <Row gap="xs" justify="center">
+            <Text variant="footnote" color="textSecondary">
+              New to Petal?
+            </Text>
+            <Touchable
+              accessibilityRole="link"
+              accessibilityLabel="Create an account"
+              haptic="tap"
+              onPress={() => router.replace(toHref('/sign-up'))}
+              pressScale="small"
+            >
+              <Text variant="buttonSmall" color="primaryText">
+                Create an account
+              </Text>
+            </Touchable>
+          </Row>
+        </Column>
       }
       testID="sign-in"
     >

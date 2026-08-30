@@ -113,10 +113,10 @@ export const REMINDER_CATEGORIES: readonly {
 ];
 
 export const AUTO_LOCK_OPTIONS: readonly { ms: number; label: string; hint: string }[] = [
-  { ms: 0, label: 'Straight away', hint: 'Locks the moment Furry Tracker leaves the screen.' },
+  { ms: 0, label: 'Straight away', hint: 'Locks the moment Petal leaves the screen.' },
   { ms: 15_000, label: 'After 15 seconds', hint: 'Long enough to answer a text.' },
   { ms: 30_000, label: 'After 30 seconds', hint: 'A quick detour and back.' },
-  { ms: 60_000, label: 'After a minute', hint: 'Furry Tracker’s usual.' },
+  { ms: 60_000, label: 'After a minute', hint: 'Petal’s usual.' },
 ];
 
 /** The longest delay Petal can promise. See the note at the top of the file. */

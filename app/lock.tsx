@@ -86,7 +86,7 @@ function denialFor(reason: BiometricFailure, message: string, label: string): De
     case 'fallback':
       return {
         title: 'Rather use your password?',
-        body: 'Sign back in with your Furry Tracker password and we’ll leave the sensor out of it this time.',
+        body: 'Sign back in with your Petal password and we’ll leave the sensor out of it this time.',
         canRetry: true,
         tone: 'info',
       };
@@ -100,14 +100,14 @@ function denialFor(reason: BiometricFailure, message: string, label: string): De
     case 'lockout':
       return {
         title: `Your phone has paused ${label}`,
-        body: 'Too many attempts in a row. Unlock your phone with its passcode to reset it, or sign in with your Furry Tracker password.',
+        body: 'Too many attempts in a row. Unlock your phone with its passcode to reset it, or sign in with your Petal password.',
         canRetry: false,
         tone: 'warning',
       };
     default:
       return {
         title: `${label} isn’t answering`,
-        body: message || 'Something interrupted the check. Your Furry Tracker password will get you straight in.',
+        body: message || 'Something interrupted the check. Your Petal password will get you straight in.',
         canRetry: false,
         tone: 'warning',
       };
@@ -362,7 +362,7 @@ export default function LockScreen() {
             fullWidth
             loading={pending === 'signOut'}
             disabled={phase === 'success'}
-            accessibilityHint="Signs you out so you can sign back in with your Furry Tracker password."
+            accessibilityHint="Signs you out so you can sign back in with your Petal password."
             testID="lock-password"
           />
         </Column>

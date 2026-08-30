@@ -309,7 +309,7 @@ export function ErrorState({
 /* ------------------------------------------------------------------ helpers */
 
 const OFFLINE_BODY =
-  'Furry Tracker can’t reach the network right now. Nothing you logged is lost — it’ll be here when you reconnect.';
+  'Petal can’t reach the network right now. Nothing you logged is lost — it’ll be here when you reconnect.';
 
 function isPromise(value: unknown): value is Promise<unknown> {
   return typeof value === 'object' && value !== null && typeof (value as Promise<unknown>).then === 'function';

@@ -127,7 +127,7 @@ const UNAVAILABLE: BiometricAvailability = {
   icon: KIND_META.none.icon,
   securityLevel: LocalAuthentication.SecurityLevel.NONE,
   reason: 'no-hardware',
-  explanation: 'This device doesn’t have a fingerprint or face sensor, so Furry Tracker can’t lock itself that way.',
+  explanation: 'This device doesn’t have a fingerprint or face sensor, so Petal can’t lock itself that way.',
 };
 
 /**
@@ -165,7 +165,7 @@ export async function isAvailable(): Promise<BiometricAvailability> {
         reason: securityLevel === LocalAuthentication.SecurityLevel.NONE ? 'device-not-secured' : 'not-enrolled',
         explanation:
           securityLevel === LocalAuthentication.SecurityLevel.NONE
-            ? 'Your phone has no screen lock yet. Add a passcode in system settings and Furry Tracker can lock to it.'
+            ? 'Your phone has no screen lock yet. Add a passcode in system settings and Petal can lock to it.'
             : `${named} isn’t set up on this phone yet. Add it in your phone’s settings and this switches on.`,
       };
     }

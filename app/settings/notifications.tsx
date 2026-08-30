@@ -190,7 +190,7 @@ export default function NotificationSettingsScreen() {
       if (!outcome.granted) {
         haptics.warn();
         toast.warning('Your phone is holding that back', {
-          description: 'Turn notifications on for Furry Tracker and the test will land straight away.',
+          description: 'Turn notifications on for Petal and the test will land straight away.',
           action: { label: 'Open settings', onPress: goToSettings },
         });
         return;
@@ -225,7 +225,7 @@ export default function NotificationSettingsScreen() {
   const header = (
     <ScreenHeader
       title="Reminders"
-      subtitle="Furry Tracker only ever interrupts you about an animal that needs something. You decide which ones."
+      subtitle="Petal only ever interrupts you about an animal that needs something. You decide which ones."
     />
   );
 
@@ -268,7 +268,7 @@ export default function NotificationSettingsScreen() {
       <Animated.View entering={enter(0)} style={{ gap: t.spacing.sm }}>
         <SectionHeader
           first
-          title="What Furry Tracker may interrupt you for"
+          title="What Petal may interrupt you for"
           subtitle={
             allOn
               ? 'Everything below is on. Turn off anything that isn’t worth a buzz.'
@@ -390,7 +390,7 @@ export default function NotificationSettingsScreen() {
         <Surface variant="surfaceAlt" radius="xl" padding="base" border>
           <Row gap="md" align="start">
             <Text variant="footnote" color="textTertiary" style={{ flex: 1 }}>
-              No streaks, no “we miss you”, no marketing. If Furry Tracker buzzes, an animal needs
+              No streaks, no “we miss you”, no marketing. If Petal buzzes, an animal needs
               something — and your categories above stay saved even while notifications are
               switched off at the phone.
             </Text>

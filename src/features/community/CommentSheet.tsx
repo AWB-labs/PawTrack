@@ -54,6 +54,7 @@ import type { CommentWithAuthor, ID } from '@/data/types';
 import { relativeTime } from '@/lib/date';
 import { formatCount, pluralWord, possessive } from '@/lib/format';
 import haptics from '@/lib/haptics';
+import { moderateText } from '@/lib/moderation';
 import { useCurrentUser } from '@/stores/session';
 import { spring, useTheme } from '@/theme';
 import {
@@ -74,6 +75,7 @@ import {
 } from '@/ui';
 import { EmptyComments } from '@/ui/illustrations';
 import { ListRowSkeleton } from '@/ui/skeletons/ContentSkeletons';
+import { useContentSafety } from './SafetySheets';
 
 /* -------------------------------------------------------------------- types */
 
@@ -111,6 +113,11 @@ export type CommentListProps = {
   ground: string;
   /** Empty state's one action: put the cursor in the bar. */
   onWriteFirst: () => void;
+  /**
+   * Opens report / block for somebody else's comment. Omitted only where there
+   * is nowhere to put the sheets — the row simply loses its overflow control.
+   */
+  onMore?: (comment: CommentWithAuthor) => void;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -205,6 +212,8 @@ export function useCommentThread(postId: ID | null | undefined): CommentThreadSt
 
   const [draft, setDraft] = useState('');
   const [replyingTo, setReplyingTo] = useState<CommentWithAuthor | null>(null);
+  /** Has the filter already asked about *this* draft? See `send`. */
+  const [warned, setWarned] = useState(false);
 
   const comments = useMemo(() => query.data ?? [], [query.data]);
   const nodes = useMemo(() => buildThread(comments), [comments]);
@@ -216,15 +225,41 @@ export function useCommentThread(postId: ID | null | undefined): CommentThreadSt
 
   const cancelReply = useCallback(() => setReplyingTo(null), []);
 
+  /**
+   * Send, with the content filter in front of it.
+   *
+   * A comment is too small to justify a confirmation sheet, so the two verdicts
+   * are spent differently: `block` refuses and keeps the draft, and `warn` costs
+   * one tap — the first press says why, the second sends it. That is enough
+   * friction to catch a comment written in temper and not enough to be a wall
+   * in front of a comment that was fine.
+   */
   const send = useCallback(() => {
     const text = draft.trim();
     if (text.length === 0 || id === '') return;
+
+    const verdict = moderateText(text);
+    if (verdict.verdict === 'block') {
+      haptics.error();
+      toast.error('We can’t post that', { description: verdict.message ?? undefined });
+      return;
+    }
+    if (verdict.verdict === 'warn' && !warned) {
+      haptics.warn();
+      setWarned(true);
+      toast.warning('Have another look?', {
+        description: `${verdict.message ?? ''} Send again if you meant it.`.trim(),
+      });
+      return;
+    }
+
     const body = replyingTo ? `@${replyingTo.author.displayName} ${text}` : text;
     setDraft('');
     setReplyingTo(null);
+    setWarned(false);
     haptics.commit();
     add.mutate(body);
-  }, [add, draft, id, replyingTo]);
+  }, [add, draft, id, replyingTo, warned]);
 
   /**
    * No adapter endpoint for comment likes yet, so this is a cache-held
@@ -270,7 +305,12 @@ export function useCommentThread(postId: ID | null | undefined): CommentThreadSt
       void query.refetch();
     },
     draft,
-    setDraft,
+    setDraft: (next: string) => {
+      // Editing after a warning clears it: the next press is a first press
+      // again, because the sentence it objected to is no longer the sentence.
+      setWarned(false);
+      setDraft(next);
+    },
     replyingTo,
     startReply,
     cancelReply,
@@ -285,7 +325,14 @@ export function useCommentThread(postId: ID | null | undefined): CommentThreadSt
 
 /* --------------------------------------------------------------------- list */
 
-export function CommentList({ thread, subject, ground, onWriteFirst, style }: CommentListProps) {
+export function CommentList({
+  thread,
+  subject,
+  ground,
+  onWriteFirst,
+  onMore,
+  style,
+}: CommentListProps) {
   const t = useTheme();
 
   if (thread.pending) {
@@ -343,6 +390,7 @@ export function CommentList({ thread, subject, ground, onWriteFirst, style }: Co
               index={position}
               ground={ground}
               thread={thread}
+              onMore={onMore}
             />
             {node.replies.length > 0 ? (
               <View
@@ -362,6 +410,7 @@ export function CommentList({ thread, subject, ground, onWriteFirst, style }: Co
                     index={position + replyIndex + 1}
                     ground={ground}
                     thread={thread}
+                    onMore={onMore}
                     compact
                   />
                 ))}
@@ -385,6 +434,7 @@ function CommentRow({
   index,
   ground,
   thread,
+  onMore,
   compact = false,
 }: {
   comment: CommentWithAuthor;
@@ -392,6 +442,7 @@ function CommentRow({
   index: number;
   ground: string;
   thread: CommentThreadState;
+  onMore?: (comment: CommentWithAuthor) => void;
   compact?: boolean;
 }) {
   const t = useTheme();
@@ -470,6 +521,24 @@ function CommentRow({
               Reply
             </Text>
           </Touchable>
+
+          {/* Spelled out rather than left to the swipe: a gesture is a fine
+              shortcut and a poor only-way, and this is the control somebody is
+              looking for at the worst possible moment. */}
+          {!mine && onMore ? (
+            <Touchable
+              accessibilityRole="button"
+              accessibilityLabel={`Report or block ${comment.author.displayName}`}
+              accessibilityHint="Opens reporting and blocking for this comment."
+              haptic="tap"
+              onPress={() => onMore(comment)}
+              pressScale="small"
+            >
+              <Text variant="captionStrong" color="textTertiary">
+                Report
+              </Text>
+            </Touchable>
+          ) : null}
         </View>
       </View>
     </View>
@@ -492,6 +561,22 @@ function CommentRow({
               tone: 'danger',
               fullSwipe: true,
               onPress: () => thread.remove(comment),
+            },
+          ]}
+        >
+          {bubble}
+        </SwipeRow>
+      ) : onMore ? (
+        <SwipeRow
+          background={ground}
+          radius="lg"
+          right={[
+            {
+              key: 'report',
+              label: 'Report',
+              icon: 'flag-outline',
+              tone: 'warning',
+              onPress: () => onMore(comment),
             },
           ]}
         >
@@ -723,10 +808,25 @@ export function CommentSheet({ controller, postId, subject }: CommentSheetProps)
   const t = useTheme();
   const thread = useCommentThread(postId);
   const inputRef = useRef<TextAreaHandle | null>(null);
+  const safety = useContentSafety();
 
   const focusBar = useCallback(() => inputRef.current?.focus(), []);
 
+  const openSafety = useCallback(
+    (comment: CommentWithAuthor) => {
+      safety.open({
+        kind: 'comment',
+        id: comment.id,
+        authorId: comment.authorId,
+        authorName: comment.author.displayName,
+        snapshot: comment.body,
+      });
+    },
+    [safety],
+  );
+
   return (
+    <>
     <Sheet
       controller={controller}
       size="tall"
@@ -744,8 +844,12 @@ export function CommentSheet({ controller, postId, subject }: CommentSheetProps)
         subject={subject}
         ground={t.color.surfaceRaised}
         onWriteFirst={focusBar}
+        onMore={openSafety}
       />
     </Sheet>
+
+    {safety.element}
+    </>
   );
 }
 

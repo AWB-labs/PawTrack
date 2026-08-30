@@ -82,7 +82,7 @@ const UNIT_SEGMENTS: Segment<WeightUnit>[] = [
 ];
 
 const THEME_FOOTNOTE: Record<ThemePreference, string> = {
-  system: 'Furry Tracker turns dark whenever your phone does, and back again in the morning.',
+  system: 'Petal turns dark whenever your phone does, and back again in the morning.',
   light: 'Warm paper and moss green, whatever your phone is doing.',
   dark: 'A warm near-black rather than a hard one — kinder at 3am, when the doses tend to be.',
 };
@@ -152,7 +152,7 @@ export default function AppearanceScreen() {
   const header = (
     <ScreenHeader
       title="Appearance"
-      subtitle="How Furry Tracker looks in your hand, and how much it moves while you use it."
+      subtitle="How Petal looks in your hand, and how much it moves while you use it."
     />
   );
 
@@ -212,7 +212,7 @@ export default function AppearanceScreen() {
           animate={false}
           footer={
             osReduceMotion
-              ? 'Your phone’s own Reduce Motion is on, so Furry Tracker is already keeping still. This switch stays here for when you turn that off.'
+              ? 'Your phone’s own Reduce Motion is on, so Petal is already keeping still. This switch stays here for when you turn that off.'
               : 'Reducing motion keeps every arrival and dismissal, it just fades them instead of sliding them. Nothing is hidden from you.'
           }
         >
@@ -223,7 +223,7 @@ export default function AppearanceScreen() {
             subtitle="A tick when you log a meal, a thud when something is deleted"
             checked={hapticsOn}
             onCheckedChange={handleHaptics}
-            accessibilityHint="Turns Furry Tracker’s vibration feedback on or off."
+            accessibilityHint="Turns Petal’s vibration feedback on or off."
           />
           <SettingsRow
             icon="accessibility-outline"
@@ -236,7 +236,7 @@ export default function AppearanceScreen() {
             }
             checked={appReduceMotion}
             onCheckedChange={handleReduceMotion}
-            accessibilityHint="Swaps Furry Tracker’s decorative movement for a plain fade."
+            accessibilityHint="Swaps Petal’s decorative movement for a plain fade."
           />
         </SettingsGroup>
       </Animated.View>

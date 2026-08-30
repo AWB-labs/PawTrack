@@ -34,11 +34,13 @@ import {
   sanitizeGrants,
   type Membership,
 } from '../../rbac/permissions';
+import { assertPublishable } from '../../lib/moderation';
 import {
   assertCan,
   membershipFor,
   type ActorContext,
   type AppointmentInput,
+  type BlockInput,
   type DataAdapter,
   type DocumentInput,
   type FeedScope,
@@ -53,6 +55,7 @@ import {
   type PetInput,
   type PetPatch,
   type PostInput,
+  type ReportInput,
   type SignInInput,
   type SignUpInput,
   type VaccinationInput,
@@ -64,9 +67,11 @@ import type {
   ActivityEvent,
   AdherenceSummary,
   Appointment,
+  BlockedAccount,
   CareTask,
   Comment,
   CommentWithAuthor,
+  ContentReport,
   DateOnly,
   DaySummary,
   FeedingLog,
@@ -81,6 +86,7 @@ import type {
   PetDocument,
   Post,
   PostWithAuthor,
+  ReportTargetKind,
   Session,
   TaskState,
   User,
@@ -102,6 +108,7 @@ import {
   type GroupMember,
   type PostLike,
   type SeedData,
+  type UserBlock,
 } from './seed';
 
 export { DEMO_INVITE_CODE, PENDING_INVITE_CODE } from './seed';
@@ -160,6 +167,7 @@ const LATENCY_MAX_MS = 420;
 
 export type MockErrorCode =
   | 'network'
+  | 'invalid'
   | 'not-found'
   | 'not-yours'
   | 'invalid-credentials'
@@ -201,7 +209,7 @@ let failure: FailureInjection = {
   enabled: false,
   rate: 1,
   scope: 'all',
-  message: 'We couldn’t reach Furry Tracker just then. Check your connection and try again.',
+  message: 'We couldn’t reach Petal just then. Check your connection and try again.',
 };
 
 /** Flip the mock into failing mode so error states can be demoed on a real device. */
@@ -471,6 +479,10 @@ export class MockAdapter implements DataAdapter {
         displayName: input.displayName.trim() || 'New member',
         avatarUrl: null,
         bio: null,
+        // Nobody arrives having agreed. The sign-up form takes the tick, and
+        // `acceptTerms` is what actually stamps the account a moment later.
+        termsAcceptedAt: null,
+        termsVersion: null,
         createdAt: new Date().toISOString(),
       };
       if (!existing) store.users.push(user);
@@ -1632,11 +1644,38 @@ export class MockAdapter implements DataAdapter {
 
   /* ------------------------------------------------------------ community */
 
+  /**
+   * Who and what this viewer must not see.
+   *
+   * Two sets rather than a filter function, because both `listFeed` and
+   * `listComments` page through hundreds of rows and neither should re-scan the
+   * blocks table per row. Blocks are symmetric — you disappear from each other
+   * — and anything you reported is gone the moment you report it, which is the
+   * half of "we'll review it" the reporter can actually see happen.
+   */
+  private veil(store: MockStore, viewerId: ID): { people: Set<ID>; content: Set<string> } {
+    const people = new Set<ID>();
+    for (const block of store.blocks) {
+      if (block.blockerId === viewerId) people.add(block.blockedId);
+      else if (block.blockedId === viewerId) people.add(block.blockerId);
+    }
+
+    const content = new Set<string>();
+    for (const report of store.reports) {
+      if (report.reporterId === viewerId) content.add(`${report.targetKind}:${report.targetId}`);
+    }
+
+    return { people, content };
+  }
+
   private hydratePost(store: MockStore, post: Post, viewerId: ID): PostWithAuthor {
     return {
       ...post,
       likedByMe: store.postLikes.some((l) => l.postId === post.id && l.userId === viewerId),
-      commentCount: store.comments.filter((c) => c.postId === post.id).length,
+      // Hidden replies are not part of the count either — a "4 comments" label
+      // over three visible ones is the kind of small lie people notice.
+      commentCount: store.comments.filter((c) => c.postId === post.id && c.hiddenAt === null)
+        .length,
       author: this.userOrThrow(store, post.authorId),
       pet: post.petId ? (store.pets.find((p) => p.id === post.petId) ?? null) : null,
       group: post.groupId ? (store.groups.find((g) => g.id === post.groupId) ?? null) : null,
@@ -1657,10 +1696,20 @@ export class MockAdapter implements DataAdapter {
     return this.read((store) => {
       const limit = opts?.limit ?? 10;
       const scope: FeedScope = opts?.scope ?? {};
+      const veil = this.veil(store, ctx.userId);
       const all = store.posts
         .filter((p) => (scope.groupId ? p.groupId === scope.groupId : true))
         .filter((p) => (scope.authorId ? p.authorId === scope.authorId : true))
         .filter((p) => (scope.petId ? p.petId === scope.petId : true))
+        // Your own posts survive both tests — a hidden post you wrote is
+        // something you should be told about, not something that evaporates.
+        .filter(
+          (p) =>
+            p.authorId === ctx.userId ||
+            (p.hiddenAt === null &&
+              !veil.people.has(p.authorId) &&
+              !veil.content.has(`post:${p.id}`)),
+        )
         .sort(byNewest);
 
       const rest = sliceAfterCursor(all, opts?.cursor);
@@ -1676,7 +1725,16 @@ export class MockAdapter implements DataAdapter {
   async getPost(ctx: ActorContext, postId: ID): Promise<PostWithAuthor | null> {
     return this.read((store) => {
       const post = store.posts.find((p) => p.id === postId);
-      return post ? this.hydratePost(store, post, ctx.userId) : null;
+      if (!post) return null;
+      const veil = this.veil(store, ctx.userId);
+      const withheld =
+        post.authorId !== ctx.userId &&
+        (post.hiddenAt !== null ||
+          veil.people.has(post.authorId) ||
+          veil.content.has(`post:${post.id}`));
+      // Same answer as a deleted post, deliberately: "that post has gone" is
+      // both true and the only thing worth saying about something you blocked.
+      return withheld ? null : this.hydratePost(store, post, ctx.userId);
     });
   }
 
@@ -1686,6 +1744,8 @@ export class MockAdapter implements DataAdapter {
       // if the owner allowed it, and the post is badged as posted while sitting.
       const membership = input.petId ? membershipFor(ctx, input.petId) : null;
       if (input.petId) assertCan(ctx, input.petId, 'community.post');
+      // The composer already checked. This is the copy a screen cannot skip.
+      assertPublishable(input.body);
 
       const post: Post = {
         id: newId('pst'),
@@ -1698,6 +1758,7 @@ export class MockAdapter implements DataAdapter {
         commentCount: 0,
         likedByMe: false,
         postedWhileSitting: membership?.role === 'caregiver',
+        hiddenAt: null,
         createdAt: new Date().toISOString(),
       };
       store.posts.unshift(post);
@@ -1740,9 +1801,17 @@ export class MockAdapter implements DataAdapter {
   }
 
   async listComments(ctx: ActorContext, postId: ID): Promise<CommentWithAuthor[]> {
-    return this.read((store) =>
-      store.comments
+    return this.read((store) => {
+      const veil = this.veil(store, ctx.userId);
+      return store.comments
         .filter((c) => c.postId === postId)
+        .filter(
+          (c) =>
+            c.authorId === ctx.userId ||
+            (c.hiddenAt === null &&
+              !veil.people.has(c.authorId) &&
+              !veil.content.has(`comment:${c.id}`)),
+        )
         .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
         .map((comment) => ({
           ...comment,
@@ -1750,14 +1819,15 @@ export class MockAdapter implements DataAdapter {
             (l) => l.commentId === comment.id && l.userId === ctx.userId,
           ),
           author: this.userOrThrow(store, comment.authorId),
-        })),
-    );
+        }));
+    });
   }
 
   async addComment(ctx: ActorContext, postId: ID, body: string): Promise<Comment> {
     return this.write((store) => {
       const post = store.posts.find((p) => p.id === postId);
       if (!post) throw new MockDataError('not-found', 'That post has already gone.');
+      assertPublishable(body);
       const comment: Comment = {
         id: newId('cmt'),
         postId,
@@ -1765,6 +1835,7 @@ export class MockAdapter implements DataAdapter {
         body: body.trim(),
         likeCount: 0,
         likedByMe: false,
+        hiddenAt: null,
         createdAt: new Date().toISOString(),
       };
       store.comments.push(comment);
@@ -1821,6 +1892,163 @@ export class MockAdapter implements DataAdapter {
         group.memberCount = Math.max(0, group.memberCount - 1);
       }
       return { ...group, joined };
+    });
+  }
+
+  /* ------------------------------------------------------------ moderation */
+
+  private toBlockedAccount(store: MockStore, block: UserBlock): BlockedAccount {
+    const user = store.users.find((u) => u.id === block.blockedId);
+    return {
+      userId: block.blockedId,
+      displayName: user?.displayName ?? 'Someone who has left',
+      avatarUrl: user?.avatarUrl ?? null,
+      blockedAt: block.createdAt,
+    };
+  }
+
+  /**
+   * Reasons severe enough to take content down on a single report rather than
+   * waiting for a second person to agree. Mirrors `petal_apply_report` in
+   * migration 0008 — if you change one, change both.
+   */
+  private static readonly ACT_IMMEDIATELY = new Set([
+    'hate',
+    'sexual',
+    'violence',
+    'animalCruelty',
+    'selfHarm',
+  ]);
+
+  /** The text a moderator will read, captured before it can be edited away. */
+  private snapshotOf(store: MockStore, kind: ReportTargetKind, targetId: ID): string | null {
+    if (kind === 'post') return store.posts.find((p) => p.id === targetId)?.body ?? null;
+    if (kind === 'comment') return store.comments.find((c) => c.id === targetId)?.body ?? null;
+    return store.users.find((u) => u.id === targetId)?.bio ?? null;
+  }
+
+  async reportContent(ctx: ActorContext, input: ReportInput): Promise<ContentReport> {
+    return this.write((store) => {
+      if (input.targetAuthorId === ctx.userId) {
+        throw new MockDataError('invalid', 'You can’t report your own post — you can delete it.');
+      }
+
+      const already = store.reports.find(
+        (r) =>
+          r.reporterId === ctx.userId &&
+          r.targetKind === input.targetKind &&
+          r.targetId === input.targetId,
+      );
+      // Reporting the same thing twice is one signal, not two. Returning the
+      // first report keeps the screen's "thanks, we've got it" honest.
+      if (already) return already;
+
+      const report: ContentReport = {
+        id: newId('rpt'),
+        reporterId: ctx.userId,
+        targetKind: input.targetKind,
+        targetId: input.targetId,
+        targetAuthorId: input.targetAuthorId,
+        reason: input.reason,
+        details: input.details?.trim() ? input.details.trim() : null,
+        snapshot: input.snapshot ?? this.snapshotOf(store, input.targetKind, input.targetId),
+        status: 'open',
+        createdAt: new Date().toISOString(),
+        resolvedAt: null,
+      };
+      store.reports.push(report);
+
+      // The offline build has no moderator, so severe reports take the content
+      // down here the way the trigger does on the server. It is the difference
+      // between a demo that behaves like the product and one that pretends.
+      const severe = MockAdapter.ACT_IMMEDIATELY.has(input.reason);
+      const tally = store.reports.filter(
+        (r) => r.targetKind === input.targetKind && r.targetId === input.targetId,
+      ).length;
+
+      const now = report.createdAt;
+      if (severe || tally >= 2) {
+        if (input.targetKind === 'post') {
+          const post = store.posts.find((p) => p.id === input.targetId);
+          if (post && post.hiddenAt === null) post.hiddenAt = now;
+        } else if (input.targetKind === 'comment') {
+          const comment = store.comments.find((c) => c.id === input.targetId);
+          if (comment && comment.hiddenAt === null) comment.hiddenAt = now;
+        }
+      }
+
+      return report;
+    });
+  }
+
+  async listMyReports(ctx: ActorContext): Promise<ContentReport[]> {
+    return this.read((store) =>
+      store.reports.filter((r) => r.reporterId === ctx.userId).sort(byNewest),
+    );
+  }
+
+  async listBlockedAccounts(ctx: ActorContext): Promise<BlockedAccount[]> {
+    return this.read((store) =>
+      store.blocks
+        .filter((b) => b.blockerId === ctx.userId)
+        .sort(byNewest)
+        .map((block) => this.toBlockedAccount(store, block)),
+    );
+  }
+
+  async blockUser(ctx: ActorContext, input: BlockInput): Promise<BlockedAccount> {
+    if (input.userId === ctx.userId) {
+      throw new MockDataError('invalid', 'You can’t block yourself, though we admire the impulse.');
+    }
+
+    // A block that came from a post is also a report. That is the half of this
+    // the App Store asks for by name, and the half a purely local mute drops:
+    // the person who blocked has told us something, and nobody heard it.
+    // Filed first, and never allowed to fail the block itself.
+    if (input.reason && input.contextKind && input.contextId) {
+      await this.reportContent(ctx, {
+        targetKind: input.contextKind,
+        targetId: input.contextId,
+        targetAuthorId: input.userId,
+        reason: input.reason,
+        details: input.details ?? null,
+        snapshot: input.snapshot ?? null,
+      }).catch(() => undefined);
+    }
+
+    return this.write((store) => {
+      const existing = store.blocks.find(
+        (b) => b.blockerId === ctx.userId && b.blockedId === input.userId,
+      );
+      if (existing) return this.toBlockedAccount(store, existing);
+
+      const block: UserBlock = {
+        blockerId: ctx.userId,
+        blockedId: input.userId,
+        reason: input.reason ?? null,
+        createdAt: new Date().toISOString(),
+      };
+      store.blocks.push(block);
+      return this.toBlockedAccount(store, block);
+    });
+  }
+
+  async unblockUser(ctx: ActorContext, userId: ID): Promise<void> {
+    await this.write((store) => {
+      store.blocks = store.blocks.filter(
+        (b) => !(b.blockerId === ctx.userId && b.blockedId === userId),
+      );
+    });
+  }
+
+  /* ----------------------------------------------------------------- legal */
+
+  async acceptTerms(ctx: ActorContext, version: number): Promise<User> {
+    return this.write((store) => {
+      const user = this.userOrThrow(store, ctx.userId);
+      user.termsAcceptedAt = new Date().toISOString();
+      user.termsVersion = version;
+      return { ...user };
     });
   }
 

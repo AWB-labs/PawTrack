@@ -35,6 +35,13 @@ export type User = {
   avatarUrl: string | null;
   /** Free-text — "Dog mum of two", shown on community posts. */
   bio: string | null
+  /**
+   * When this account last agreed to the terms, and to which version. Null
+   * means they have not agreed to anything yet — the community is closed to
+   * them until they do. See `TERMS_VERSION` in `@/features/legal/agreement`.
+   */
+  termsAcceptedAt: Timestamp | null;
+  termsVersion: number | null;
   createdAt: Timestamp;
 };
 
@@ -353,6 +360,12 @@ export type Post = {
   likedByMe: boolean;
   /** True when a caregiver posted while sitting — shown as a subtle badge. */
   postedWhileSitting: boolean;
+  /**
+   * Set when moderation has taken this down. Nobody but the author can see a
+   * hidden post at all, and the author sees it badged rather than vanished —
+   * content that disappears without a word reads as a bug, not a consequence.
+   */
+  hiddenAt: Timestamp | null;
   createdAt: Timestamp;
 };
 
@@ -365,10 +378,116 @@ export type Comment = {
   body: string;
   likeCount: number;
   likedByMe: boolean;
+  /** As on `Post` — taken down, and visible only to whoever wrote it. */
+  hiddenAt: Timestamp | null;
   createdAt: Timestamp;
 };
 
 export type CommentWithAuthor = Comment & { author: User };
+
+/* ------------------------------------------------------------- moderation */
+
+/**
+ * Why somebody flagged something. The order is the order the sheet offers them
+ * in, which is roughly "most reported first" rather than alphabetical — the
+ * common cases should be reachable without reading the whole list.
+ */
+export type ReportReason =
+  | 'harassment'
+  | 'hate'
+  | 'sexual'
+  | 'violence'
+  | 'animalCruelty'
+  | 'spam'
+  | 'impersonation'
+  | 'selfHarm'
+  | 'other';
+
+export type ReportTargetKind = 'post' | 'comment' | 'user';
+
+/**
+ * `open` is the queue. `actioned` means the content came down and, where the
+ * account was at fault, the account went with it. `dismissed` means a human
+ * looked and there was nothing to answer — which is still a decision, and still
+ * has to happen inside the same day.
+ */
+export type ReportStatus = 'open' | 'actioned' | 'dismissed';
+
+export type ContentReport = {
+  id: ID;
+  reporterId: ID;
+  targetKind: ReportTargetKind;
+  targetId: ID;
+  /** Whose content it was — the account a moderator may end up ejecting. */
+  targetAuthorId: ID | null;
+  reason: ReportReason;
+  /** The reporter's own words. Optional, and usually the most useful field. */
+  details: string | null;
+  /** Copy of the reported text, kept so a deleted post is still reviewable. */
+  snapshot: string | null;
+  status: ReportStatus;
+  createdAt: Timestamp;
+  resolvedAt: Timestamp | null;
+};
+
+/** One account this user has blocked, joined with enough to render the row. */
+export type BlockedAccount = {
+  userId: ID;
+  displayName: string;
+  avatarUrl: string | null;
+  blockedAt: Timestamp;
+};
+
+export const REPORT_REASON_META: Record<
+  ReportReason,
+  { label: string; description: string; icon: string }
+> = {
+  harassment: {
+    label: 'Harassment or bullying',
+    description: 'Aimed at a person — insults, pile-ons, unwanted contact.',
+    icon: 'person-remove-outline',
+  },
+  hate: {
+    label: 'Hate speech',
+    description: 'Attacks someone for who they are.',
+    icon: 'ban-outline',
+  },
+  sexual: {
+    label: 'Sexual or adult content',
+    description: 'Nudity, sexual content, or anything soliciting it.',
+    icon: 'eye-off-outline',
+  },
+  violence: {
+    label: 'Violence or threats',
+    description: 'Threatens harm to a person.',
+    icon: 'warning-outline',
+  },
+  animalCruelty: {
+    label: 'Animal cruelty',
+    description: 'Shows or encourages harming an animal.',
+    icon: 'paw-outline',
+  },
+  spam: {
+    label: 'Spam or a scam',
+    description: 'Selling, promoting, or trying to take someone in.',
+    icon: 'mail-unread-outline',
+  },
+  impersonation: {
+    label: 'Impersonation',
+    description: 'Pretending to be someone else, or a pet that isn’t theirs.',
+    icon: 'people-outline',
+  },
+  selfHarm: {
+    label: 'Self-harm',
+    description: 'Someone may be at risk. We look at these first.',
+    icon: 'heart-dislike-outline',
+  },
+  other: {
+    label: 'Something else',
+    description: 'Tell us what’s wrong and we’ll look.',
+    icon: 'ellipsis-horizontal-outline',
+  },
+};
 
 /* ---------------------------------------------------------- derived views */
 

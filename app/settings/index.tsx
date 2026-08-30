@@ -27,6 +27,7 @@ import { View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { describeDataSource } from '@/data';
+import { useBlockedAccounts } from '@/data/queries/useModeration';
 import { SettingsGroup } from '@/features/settings/SettingsGroup';
 import { SettingsRow } from '@/features/settings/SettingsRow';
 import {
@@ -81,6 +82,8 @@ export default function SettingsHubScreen() {
   const reminders = useAppSettings((s) => s.reminders);
   const quietHours = useAppSettings((s) => s.quietHours);
 
+  const blocked = useBlockedAccounts();
+
   /* ---- values the device owns ------------------------------------------ */
 
   const [permission, setPermission] = useState<PermissionOutcome | null>(null);
@@ -100,6 +103,14 @@ export default function SettingsHubScreen() {
   /* ---- derived ---------------------------------------------------------- */
 
   const dataSource = useMemo(() => describeDataSource(), []);
+
+  // Says the number rather than "Manage", because the one thing somebody
+  // opening this row usually wants to know is whether a block actually took.
+  const safetySubtitle = useMemo(() => {
+    const count = blocked.data?.length ?? 0;
+    if (count === 0) return 'Blocking, reporting, and the community rules';
+    return `${count} blocked · reporting and the community rules`;
+  }, [blocked.data]);
 
   const appearanceSubtitle = useMemo(() => {
     const parts = [`Weights in ${UNIT_LABEL[weightUnit].toLowerCase()}`];
@@ -135,7 +146,7 @@ export default function SettingsHubScreen() {
   const header = (
     <ScreenHeader
       title="Settings"
-      subtitle="How Furry Tracker looks, when it speaks up, and who gets to see your pets."
+      subtitle="How Petal looks, when it speaks up, and who gets to see your pets."
     />
   );
 
@@ -158,7 +169,7 @@ export default function SettingsHubScreen() {
 
       <Animated.View entering={enter(1)}>
         <SettingsGroup
-          title="Furry Tracker on this phone"
+          title="Petal on this phone"
           icon="phone-portrait-outline"
           animate={false}
           footer="Both live on this handset. Sign in somewhere else and you’ll choose them again there."
@@ -200,9 +211,17 @@ export default function SettingsHubScreen() {
             onPress={() => router.push(toHref('/settings/account'))}
           />
           <SettingsRow
+            icon="shield-checkmark-outline"
+            tone="primary"
+            title="Safety and community"
+            subtitle={safetySubtitle}
+            accessibilityHint="Opens blocked accounts, your reports, and the community rules."
+            onPress={() => router.push(toHref('/settings/safety'))}
+          />
+          <SettingsRow
             icon="information-circle-outline"
             tone="neutral"
-            title="About Furry Tracker"
+            title="About Petal"
             subtitle={`Version ${APP_VERSION} · ${dataSource.label}`}
             accessibilityHint="Opens version, credits and licences."
             onPress={() => router.push(toHref('/settings/about'))}
@@ -233,7 +252,7 @@ export default function SettingsHubScreen() {
 
       <ConfirmSheet
         controller={signOutSheet}
-        title="Sign out of Furry Tracker?"
+        title="Sign out of Petal?"
         body="Everything you’ve logged stays exactly where it is. You’ll just need to sign in again to see it."
         confirmLabel="Sign out"
         cancelLabel="Stay signed in"

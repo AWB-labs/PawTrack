@@ -721,7 +721,7 @@ export default function MedicineFormScreen() {
               value={refillAt}
               onChange={setRefillAt}
               label="Remind me to reorder"
-              placeholder="Let Furry Tracker work it out"
+              placeholder="Let Petal work it out"
               helper="Leave it empty and we'll nudge you a few days before it runs out."
               minDate={toDateOnly(new Date())}
               clearable
@@ -739,7 +739,7 @@ export default function MedicineFormScreen() {
           label="Remind me at dose time"
           description={
             scheduled
-              ? `A nudge at ${times.length > 0 ? joinWithAnd(times.map(formatTimeOfDay)) : 'each dose time'}. Medicine reminders are the one alert Furry Tracker asks to break through Focus.`
+              ? `A nudge at ${times.length > 0 ? joinWithAnd(times.map(formatTimeOfDay)) : 'each dose time'}. Medicine reminders are the one alert Petal asks to break through Focus.`
               : 'Only useful once this has dose times.'
           }
           disabled={!scheduled}

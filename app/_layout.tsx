@@ -8,7 +8,14 @@
  *
  *   locked          → biometric re-entry only
  *   unauthenticated → the auth branch
- *   authenticated   → onboarding until a profile + first pet exist, then the app
+ *   authenticated   → the agreement, until this account has accepted the current
+ *                     terms; then onboarding until a profile + first pet exist;
+ *                     then the app
+ *
+ * The agreement sits *above* onboarding on purpose. It is the App Store's
+ * Guideline 1.2 gate for accounts that predate the current terms, and an account
+ * that has not agreed to the community rules should not be filling in a profile
+ * that the community will see.
  *
  * Note there is deliberately no *global* role branch. A user is an owner of some
  * pets and a caregiver for others simultaneously, so role is resolved per pet
@@ -21,6 +28,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect } from 'react';
 
+import { useNeedsAgreement, useSyncTermsAcceptance } from '@/data/queries/useModeration';
 import { useNotificationRouting } from '@/lib/notifications';
 import { AppProviders } from '@/providers/AppProviders';
 import { useSession } from '@/stores/session';
@@ -68,13 +76,18 @@ function RootNavigator() {
   const theme = useTheme();
   const status = useSession((s) => s.status);
   const { needsProfile, needsFirstPet } = useOnboardingStatus();
+  const needsAgreement = useNeedsAgreement();
 
   // Taps on a reminder deep-link straight to the thing that needs doing.
   useNotificationRouting();
 
+  // Carries a fresh sign-up's agreement from the device onto the new profile.
+  useSyncTermsAcceptance();
+
   const isAuthed = status === 'authenticated';
   const isLocked = status === 'locked';
-  const needsOnboarding = isAuthed && (needsProfile || needsFirstPet);
+  const mustAgree = isAuthed && needsAgreement;
+  const needsOnboarding = isAuthed && !mustAgree && (needsProfile || needsFirstPet);
 
   return (
     <>
@@ -94,11 +107,15 @@ function RootNavigator() {
           <Stack.Screen name="(auth)" options={routeTransition.fade} />
         </Stack.Protected>
 
+        <Stack.Protected guard={mustAgree}>
+          <Stack.Screen name="(legal)" options={routeTransition.fade} />
+        </Stack.Protected>
+
         <Stack.Protected guard={needsOnboarding}>
           <Stack.Screen name="(onboarding)" options={routeTransition.fade} />
         </Stack.Protected>
 
-        <Stack.Protected guard={isAuthed && !needsOnboarding}>
+        <Stack.Protected guard={isAuthed && !mustAgree && !needsOnboarding}>
           <Stack.Screen name="(tabs)" options={routeTransition.fade} />
           <Stack.Screen name="pet" />
           <Stack.Screen name="record" options={routeTransition.modal} />

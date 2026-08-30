@@ -22,6 +22,16 @@ export type PreferencesState = {
   biometricLock: boolean;
   /** Has the welcome carousel been seen on this device? */
   hasSeenWelcome: boolean;
+  /**
+   * Which version of the terms was agreed to *on this handset*, before there
+   * was an account to record it against. Zero means the agreement screen has
+   * not been through yet, and the welcome buttons route via it.
+   *
+   * This is a convenience, not the record. The record lives on the profile and
+   * is what the router's legal gate reads — a device that has agreed still
+   * meets the gate when the account behind it hasn't.
+   */
+  acceptedTermsVersion: number;
   /** Last pet the user was looking at — restores context on cold start. */
   lastActivePetId: string | null;
 
@@ -31,6 +41,7 @@ export type PreferencesState = {
   setWeightUnit: (unit: WeightUnit) => void;
   setBiometricLock: (enabled: boolean) => void;
   markWelcomeSeen: () => void;
+  acceptTerms: (version: number) => void;
   setLastActivePetId: (petId: string | null) => void;
 };
 
@@ -43,6 +54,7 @@ export const usePreferences = create<PreferencesState>()(
       weightUnit: 'kg',
       biometricLock: false,
       hasSeenWelcome: false,
+      acceptedTermsVersion: 0,
       lastActivePetId: null,
 
       setTheme: (theme) => set({ theme }),
@@ -51,6 +63,7 @@ export const usePreferences = create<PreferencesState>()(
       setWeightUnit: (weightUnit) => set({ weightUnit }),
       setBiometricLock: (biometricLock) => set({ biometricLock }),
       markWelcomeSeen: () => set({ hasSeenWelcome: true }),
+      acceptTerms: (acceptedTermsVersion) => set({ acceptedTermsVersion }),
       setLastActivePetId: (lastActivePetId) => set({ lastActivePetId }),
     }),
     {
@@ -59,8 +72,16 @@ export const usePreferences = create<PreferencesState>()(
       // v1: the settings screen that could ever arm `biometricLock` is gone, so
       // any device that had already armed it is force-unlocked rather than left
       // stranded behind a switch nothing can reach anymore.
-      version: 1,
-      migrate: (persisted) => ({ ...(persisted as PreferencesState), biometricLock: false }),
+      //
+      // v2: the community agreement. Every existing device starts at 0 — a
+      // handset that has been used for months has still never seen these terms,
+      // and defaulting it to "agreed" would make the record a lie.
+      version: 2,
+      migrate: (persisted) => ({
+        ...(persisted as PreferencesState),
+        biometricLock: false,
+        acceptedTermsVersion: 0,
+      }),
     },
   ),
 );

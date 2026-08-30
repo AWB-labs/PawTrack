@@ -80,7 +80,7 @@ const CHOICES: readonly Choice[] = [
 
 const CODE_HELP: Record<'too-short' | 'bad-characters' | 'empty', string> = {
   empty: 'Pop the code in and we’ll find the household.',
-  'too-short': 'Furry Tracker codes look like BUDDY-4KQ2 — a name, a dash, four characters.',
+  'too-short': 'Petal codes look like BUDDY-4KQ2 — a name, a dash, four characters.',
   'bad-characters': 'One of those characters isn’t one we use. Check for a 0 that should be an O.',
 };
 
@@ -239,7 +239,7 @@ export default function OnboardingFirstPetScreen() {
       step={2}
       eyebrow="Step two"
       title="Who are you here for?"
-      body="Furry Tracker works the same either way — and plenty of people end up doing both."
+      body="Petal works the same either way — and plenty of people end up doing both."
       onBack={() => router.back()}
       onSkip={() => continueTo('later')}
       skipLabel="Decide later"

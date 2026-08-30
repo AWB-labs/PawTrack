@@ -43,7 +43,7 @@ export default function AuthAgreementScreen() {
   return (
     <AgreementScreen
       title="Before you join us"
-      subtitle="Furry Tracker has a community feed. These are the rules for it — please read them."
+      subtitle="Petal has a community feed. These are the rules for it — please read them."
       confirmLabel={next === '/sign-in' ? 'I agree — sign me in' : 'I agree — create my account'}
       declineLabel="Not right now"
       onAgree={agree}

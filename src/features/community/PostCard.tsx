@@ -199,7 +199,7 @@ export function PostCard({
   /* ---- share ---------------------------------------------------------- */
 
   const onShare = useCallback(() => {
-    const headline = pet ? `${pet.name} on Furry Tracker` : `${author.displayName} on Furry Tracker`;
+    const headline = pet ? `${pet.name} on Petal` : `${author.displayName} on Petal`;
     const body = post.body.trim();
     const message = body ? `${headline}\n\n${truncate(body, 180)}` : headline;
     void shareText(message, buildPostUrl(post.id));

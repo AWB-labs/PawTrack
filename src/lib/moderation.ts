@@ -1,11 +1,11 @@
 /**
- * Furry Tracker — objectionable content filter.
+ * Petal — objectionable content filter.
  *
  * The first of the four things the App Store requires of an app with a public
  * feed (agreement, filter, flag, block). This is the *filter*: it runs on the
  * text of every post and comment before it is sent, and again inside both
  * adapters so a screen that forgets to call it still cannot write. The database
- * runs the same check a third time (`petal_moderation_verdict` in 0008), which
+ * runs the same check a third time (`petal_blocked_term` in 0008), which
  * is the only one an attacker talking to PostgREST directly cannot skip.
  *
  * Three decisions worth knowing:
@@ -158,7 +158,7 @@ const SEVERITY: readonly ModerationCategory[] = [
  */
 const MESSAGES: Record<ModerationCategory, string> = {
   hate: 'This reads as a slur or hate speech, and there is no version of that we publish. Rewrite it and try again.',
-  sexual: 'Furry Tracker is a pet community, and sexual content isn’t allowed anywhere in it.',
+  sexual: 'Petal is a pet community, and sexual content isn’t allowed anywhere in it.',
   violence:
     'This reads as a threat. Threatening or wishing harm on somebody costs an account, not just a post.',
   animalCruelty:

@@ -1,5 +1,5 @@
 /**
- * Furry Tracker — the agreement.
+ * Petal — the agreement.
  *
  * One module holding the end-user licence agreement's *identity*: which version
  * is current, where the full text lives, and the rules a person is agreeing to
@@ -106,10 +106,10 @@ export const AGREEMENT_CONSENT =
   'I agree to the Terms of Use (EULA), the Privacy Policy, and the Community Rules.';
 
 export const AGREEMENT_CONSEQUENCE =
-  'I understand Furry Tracker has zero tolerance for objectionable content and abusive users, and that posting either removes my content and ends my account.';
+  'I understand Petal has zero tolerance for objectionable content and abusive users, and that posting either removes my content and ends my account.';
 
 export const AGREEMENT_SUMMARY =
-  'Furry Tracker has a public community feed. Before you join it, these are the rules — all of them enforced, none of them decorative.';
+  'Petal has a public community feed. Before you join it, these are the rules — all of them enforced, none of them decorative.';
 
 /** Shown wherever we ask somebody to trust the process rather than just leave. */
 export const REVIEW_PROMISE = `Reported content is reviewed within ${REVIEW_WINDOW_HOURS} hours. Anything that breaks these rules is removed, and the account behind it is ejected.`;

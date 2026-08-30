@@ -126,15 +126,15 @@ export async function askOwnerForAccess(input: AskOwnerInput): Promise<void> {
   switch (input.reason) {
     case 'no-membership':
     case 'invite-pending':
-      body = `Could you send me a Furry Tracker invite for ${pet}? Then I can see the schedule and keep everything logged while I'm helping out.`;
+      body = `Could you send me a Petal invite for ${pet}? Then I can see the schedule and keep everything logged while I'm helping out.`;
       break;
     case 'window-expired':
-      body = `My sitting dates for ${pet} have finished in Furry Tracker. Could you extend them if you'd like me to carry on?`;
+      body = `My sitting dates for ${pet} have finished in Petal. Could you extend them if you'd like me to carry on?`;
       break;
     default:
       body = wanted
-        ? `I'm looking after ${pet} in Furry Tracker but I can't ${wanted} yet. Could you add that to my access? It's under Caregivers → my name → Permissions.`
-        : `I'm looking after ${pet} in Furry Tracker and could use a bit more access. Could you take a look under Caregivers → my name → Permissions?`;
+        ? `I'm looking after ${pet} in Petal but I can't ${wanted} yet. Could you add that to my access? It's under Caregivers → my name → Permissions.`
+        : `I'm looking after ${pet} in Petal and could use a bit more access. Could you take a look under Caregivers → my name → Permissions?`;
   }
 
   try {

@@ -167,7 +167,7 @@ export class DataError extends Error {
 /** No usable connection. The only error the query layer should auto-retry. */
 export class NetworkError extends DataError {
   constructor(detail?: string | null, cause?: unknown) {
-    super('network', "We couldn't reach Furry Tracker just now. Check your connection and try again.", {
+    super('network', "We couldn't reach Petal just now. Check your connection and try again.", {
       retryable: true,
       detail,
       cause,

@@ -146,7 +146,7 @@ export default function SettingsHubScreen() {
   const header = (
     <ScreenHeader
       title="Settings"
-      subtitle="How Furry Tracker looks, when it speaks up, and who gets to see your pets."
+      subtitle="How Petal looks, when it speaks up, and who gets to see your pets."
     />
   );
 
@@ -169,7 +169,7 @@ export default function SettingsHubScreen() {
 
       <Animated.View entering={enter(1)}>
         <SettingsGroup
-          title="Furry Tracker on this phone"
+          title="Petal on this phone"
           icon="phone-portrait-outline"
           animate={false}
           footer="Both live on this handset. Sign in somewhere else and you’ll choose them again there."
@@ -221,7 +221,7 @@ export default function SettingsHubScreen() {
           <SettingsRow
             icon="information-circle-outline"
             tone="neutral"
-            title="About Furry Tracker"
+            title="About Petal"
             subtitle={`Version ${APP_VERSION} · ${dataSource.label}`}
             accessibilityHint="Opens version, credits and licences."
             onPress={() => router.push(toHref('/settings/about'))}
@@ -252,7 +252,7 @@ export default function SettingsHubScreen() {
 
       <ConfirmSheet
         controller={signOutSheet}
-        title="Sign out of Furry Tracker?"
+        title="Sign out of Petal?"
         body="Everything you’ve logged stays exactly where it is. You’ll just need to sign in again to see it."
         confirmLabel="Sign out"
         cancelLabel="Stay signed in"

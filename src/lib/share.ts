@@ -117,7 +117,7 @@ export function inviteMessage(input: InviteShareInput): string {
   const lines = [
     opener,
     '',
-    `I use Furry Tracker to keep ${petName}'s meals, medicine and vet notes in one place. Join me and you'll see exactly what's due, and I'll see it's been done.`,
+    `I use Petal to keep ${petName}'s meals, medicine and vet notes in one place. Join me and you'll see exactly what's due, and I'll see it's been done.`,
   ];
 
   if (accessBlurb?.trim()) lines.push('', accessBlurb.trim());
@@ -232,7 +232,7 @@ export async function shareDocument(input: DocumentShareInput): Promise<ShareOut
     return {
       ok: false,
       reason: 'unavailable',
-      message: 'This device can’t open a share sheet for files. You can still view the document inside Furry Tracker.',
+      message: 'This device can’t open a share sheet for files. You can still view the document inside Petal.',
     };
   }
 
@@ -249,7 +249,7 @@ export async function shareDocument(input: DocumentShareInput): Promise<ShareOut
     return {
       ok: false,
       reason: 'failed',
-      message: 'That file wouldn’t hand over to another app. Try again, or open it in Furry Tracker and screenshot it.',
+      message: 'That file wouldn’t hand over to another app. Try again, or open it in Petal and screenshot it.',
     };
   }
 }

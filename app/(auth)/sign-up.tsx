@@ -200,7 +200,7 @@ export default function SignUpScreen() {
   return (
     <AuthScaffold
       eyebrow={greeting ? `Hello, ${greeting}` : 'Let’s begin'}
-      title="Make Furry Tracker yours"
+      title="Make Petal yours"
       subtitle="One account holds every animal you look after — and everyone who helps you look after them."
       footer={
         <Column gap="md">

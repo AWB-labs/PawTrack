@@ -480,7 +480,7 @@ begin
     -- person reads. The category rides along in DETAIL for the logs, and the
     -- matched term never leaves the database — telling somebody exactly which
     -- word tripped the filter is telling them what to spell differently.
-    raise exception 'That breaks the Furry Tracker community rules, so it wasn''t posted. Have another look and try again.'
+    raise exception 'That breaks the Petal community rules, so it wasn''t posted. Have another look and try again.'
       using detail = format('moderation:%s', hit.category);
   end if;
 

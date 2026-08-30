@@ -254,7 +254,7 @@ export function RefillCard({
           value={remindAt}
           onChange={setRemindAt}
           label="Remind me to reorder"
-          placeholder="Let Furry Tracker work it out"
+          placeholder="Let Petal work it out"
           helper="Leave it empty and we'll nudge you a few days before the pack runs out."
           minDate={today}
           clearable

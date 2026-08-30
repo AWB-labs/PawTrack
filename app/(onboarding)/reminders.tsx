@@ -279,7 +279,7 @@ export default function OnboardingRemindersScreen() {
       body={
         granted
           ? 'Every schedule you set from here on will nudge you at the right moment — and only for the things below.'
-          : 'Furry Tracker already knows when the bowl and the tablet are due. Let it tell you, and you can stop keeping the list in your head.'
+          : 'Petal already knows when the bowl and the tablet are due. Let it tell you, and you can stop keeping the list in your head.'
       }
       onBack={() => router.back()}
       primary={primary}
@@ -333,7 +333,7 @@ export default function OnboardingRemindersScreen() {
             <Row gap="sm" align="start">
               <Icon name="close-circle-outline" size="xs" color="textTertiary" />
               <Text variant="caption" color="textTertiary" style={{ flex: 1 }}>
-                Nothing else. No streaks, no “we miss you”, no marketing — Furry Tracker only ever
+                Nothing else. No streaks, no “we miss you”, no marketing — Petal only ever
                 interrupts you about an animal that needs something.
               </Text>
             </Row>

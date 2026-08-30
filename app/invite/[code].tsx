@@ -214,7 +214,7 @@ export default function AcceptInviteScreen() {
           tone="warning"
           illustration={<ErrorNotFound size={t.spacing.colossal * 3} />}
           headline="That link looks incomplete"
-          body="Furry Tracker codes look like BUDDY-4KQ2. It may have been cut short on the way — ask whoever sent it to share the whole thing again."
+          body="Petal codes look like BUDDY-4KQ2. It may have been cut short on the way — ask whoever sent it to share the whole thing again."
           action={{ label: 'Close', icon: 'arrow-back', onPress: leave }}
         />
       </Screen>
@@ -588,7 +588,7 @@ export default function AcceptInviteScreen() {
             <InviteScan size={t.spacing.giant} />
             <Column flex gap="hair">
               <Text variant="subheadStrong" color="onPrimarySoft">
-                {outcome === 'locked' ? 'Unlock Furry Tracker first' : 'You’ll need a Furry Tracker account'}
+                {outcome === 'locked' ? 'Unlock Petal first' : 'You’ll need a Petal account'}
               </Text>
               <Text variant="caption" color="onPrimarySoft">
                 {outcome === 'locked'

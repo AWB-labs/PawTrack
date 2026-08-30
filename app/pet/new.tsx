@@ -397,7 +397,7 @@ export default function NewPetScreen() {
               align="center"
               style={{ maxWidth: t.spacing.colossal * 4 }}
             >
-              {`${possessive(created.name)} profile is ready. Add a feeding time or a medicine next, and Furry Tracker will start reminding you.`}
+              {`${possessive(created.name)} profile is ready. Add a feeding time or a medicine next, and Petal will start reminding you.`}
             </Text>
           </Animated.View>
 
@@ -608,7 +608,7 @@ export default function NewPetScreen() {
             />
             <Surface variant="surfaceAlt" radius="lg" padding="base" border>
               <Text variant="footnote" color="textSecondary">
-                {`Weighing ${trimmedName || 'them'} every few months is the cheapest early-warning system there is — Furry Tracker charts it and flags the drifts.`}
+                {`Weighing ${trimmedName || 'them'} every few months is the cheapest early-warning system there is — Petal charts it and flags the drifts.`}
               </Text>
             </Surface>
           </Column>

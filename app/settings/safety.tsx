@@ -229,7 +229,7 @@ export default function SafetySettingsScreen() {
             title="Email our safety team"
             subtitle={SAFETY_ADDRESS}
             accessibilityHint="Opens your mail app with a message started."
-            onPress={() => void composeEmail(SAFETY_ADDRESS, 'Furry Tracker — safety')}
+            onPress={() => void composeEmail(SAFETY_ADDRESS, 'Petal — safety')}
           />
         </SettingsGroup>
       </Animated.View>

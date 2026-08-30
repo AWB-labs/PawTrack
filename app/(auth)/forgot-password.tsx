@@ -253,7 +253,7 @@ export default function ForgotPasswordScreen() {
             <Icon name="lock-closed-outline" size="xs" color="textTertiary" />
             <Text variant="caption" color="textTertiary" style={{ flex: 1 }}>
               We answer the same way whether or not that address has an account — which keeps
-              anyone from using this screen to find out who’s on Furry Tracker.
+              anyone from using this screen to find out who’s on Petal.
             </Text>
           </Row>
         </Column>

@@ -46,7 +46,7 @@ export default function LegalAgreementScreen() {
       subtitle={
         returning
           ? 'We’ve updated the community rules. Have a read — it won’t take long.'
-          : 'Furry Tracker has a community feed, and these are the rules for it.'
+          : 'Petal has a community feed, and these are the rules for it.'
       }
       confirmLabel="I agree"
       declineLabel="Sign out instead"

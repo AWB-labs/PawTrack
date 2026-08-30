@@ -76,7 +76,14 @@ Track feeding, meds and vet visits — and share care with sitters, safely.
 
 - **Privacy Policy / Terms of Service / Support URLs** (both stores ask for these separately, not in the description body):
   - `https://awb-labs.github.io/PawTrack/privacy-policy.html`
-  - `https://awb-labs.github.io/PawTrack/terms.html`
+  - `https://awb-labs.github.io/PawTrack/terms.html` ← use this as the **EULA / Licence Agreement URL** in App Store Connect, not just as Terms of Service
+  - `https://awb-labs.github.io/PawTrack/community-guidelines.html`
   - `https://awb-labs.github.io/PawTrack/support.html`
+- **Guideline 1.2 (user-generated content).** The app has a public community feed, so a review will look for five specific things. Where each one is, for the reviewer notes and for the screen recording:
+  1. *Agreement with a zero-tolerance clause, before registering or signing in* — tap **Create an account** on the welcome carousel. The rules screen comes before the form, and the form itself carries a required agreement checkbox. Terms §5 is the binding text.
+  2. *Filtering* — the composer refuses objectionable text before it is sent, and the database refuses it again (`posts_moderate` / `comments_moderate` triggers).
+  3. *Flagging* — the **⋯** control on any post, or **Report** under any comment.
+  4. *Blocking* — the same **⋯** control, second row. Blocking is immediate, symmetric, and files a report so we are told why. Undo it in **Settings → Safety**.
+  5. *Acting within 24 hours* — published in Terms §5.6 and on the Community Rules page; the operational side is [MODERATION.md](MODERATION.md).
 - The vet-care disclaimer at the end of the description is deliberate — Apple has rejected health-adjacent apps for implying medical advice, and it matches the disclaimer already in the Terms of Service.
 - If the feature set changes (documents/booking come back, Security tab returns, etc.), update the description before resubmitting — an inaccurate listing is itself a rejection risk.

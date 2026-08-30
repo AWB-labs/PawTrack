@@ -15,6 +15,11 @@
  *   · **The promise sits where the doubt is** — directly under the password,
  *     right before the button that commits, rather than buried in a policy page
  *     nobody opens.
+ *
+ * The one checkbox on the screen is the agreement, and it is required. Somebody
+ * arriving from the welcome carousel has already read the rules on their own
+ * screen; this is the record of them saying yes, sitting immediately above the
+ * button that creates the account rather than as small print under it.
  */
 
 import React, { useCallback, useRef, useState } from 'react';
@@ -24,14 +29,22 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { AuthScaffold } from '@/features/auth/AuthScaffold';
 import { PasswordField, passwordProblem } from '@/features/auth/PasswordField';
-import { openExternal } from '@/lib/deeplinks';
+import {
+  AGREEMENT_CONSENT,
+  AGREEMENT_CONSEQUENCE,
+  LEGAL_URLS,
+  TERMS_VERSION,
+} from '@/features/legal/agreement';
+import { openExternal, toHref } from '@/lib/deeplinks';
 import { toUserMessage, type UserMessage } from '@/lib/errors';
 import haptics from '@/lib/haptics';
 import { useSession } from '@/stores/session';
 import { useTheme } from '@/theme';
+import { usePreferences } from '@/stores/preferences';
 import {
   Banner,
   Button,
+  Checkbox,
   Column,
   Icon,
   Input,
@@ -46,8 +59,9 @@ import {
 
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const TERMS_URL = 'https://petal.app/terms';
-const PRIVACY_URL = 'https://petal.app/privacy';
+const TERMS_URL = LEGAL_URLS.terms;
+const PRIVACY_URL = LEGAL_URLS.privacy;
+const RULES_URL = LEGAL_URLS.guidelines;
 
 /** Long enough for "Dr. María-José van der Berg", short enough to fit a header. */
 const NAME_MAX = 40;
@@ -56,6 +70,8 @@ const COPY = {
   nameMissing: 'What should we call you?',
   emailMissing: 'We’ll need an email so you can get back in.',
   emailShape: 'That looks a little off — check for a missing @ or a stray dot.',
+  agreementMissing:
+    'We need your agreement to the terms and community rules before we can make the account.',
 } as const;
 
 /* ------------------------------------------------------------------ helpers */
@@ -125,6 +141,14 @@ export default function SignUpScreen() {
   const [failure, setFailure] = useState<UserMessage | null>(null);
   const [attempt, setAttempt] = useState(0);
 
+  // Pre-ticked *only* when this device has just been through the agreement
+  // screen on its way here, which is the ordinary path from the welcome
+  // carousel. Reaching the form any other way leaves it empty, where it belongs.
+  const acceptedOnDevice = usePreferences((s) => s.acceptedTermsVersion);
+  const acceptTermsOnDevice = usePreferences((s) => s.acceptTerms);
+  const [agreed, setAgreed] = useState(acceptedOnDevice >= TERMS_VERSION);
+  const [agreementNudged, setAgreementNudged] = useState(false);
+
   const busy = pending === 'signUp' || pending === 'oauth';
   const greeting = firstName(name);
 
@@ -151,17 +175,27 @@ export default function SignUpScreen() {
       return;
     }
 
+    // Checked after the fields so the form points at one problem at a time, and
+    // before the network so no account is ever created without this on record.
+    if (!agreed) {
+      setAgreementNudged(true);
+      haptics.warn();
+      return;
+    }
+
     setFailure(null);
     try {
+      acceptTermsOnDevice(TERMS_VERSION);
       await signUp({ email: email.trim(), password, displayName: name.trim() });
       haptics.success();
-      // The onboarding guard takes it from here — profile, then first pet.
+      // The legal gate stamps the agreement onto the new profile, then the
+      // onboarding guard takes it from there — profile, then first pet.
     } catch (error) {
       haptics.error();
       setFailure(toUserMessage(error));
       setAttempt((n) => n + 1);
     }
-  }, [email, name, password, signUp]);
+  }, [acceptTermsOnDevice, agreed, email, name, password, signUp]);
 
   return (
     <AuthScaffold
@@ -172,7 +206,7 @@ export default function SignUpScreen() {
         <Column gap="md">
           <Column gap="xs" align="center">
             <Text variant="caption" color="textTertiary" align="center">
-              Creating an account means you’re happy with how we handle your data.
+              The full text of everything you’re agreeing to, in case you’d like it.
             </Text>
             <Row gap="md">
               <Touchable
@@ -192,6 +226,21 @@ export default function SignUpScreen() {
               </Text>
               <Touchable
                 accessibilityRole="link"
+                accessibilityLabel="Read the community rules"
+                haptic="tap"
+                onPress={() => void openExternal(RULES_URL)}
+                pressScale="small"
+                style={{ paddingVertical: t.spacing.xxs }}
+              >
+                <Text variant="caption" color="primaryText">
+                  Community Rules
+                </Text>
+              </Touchable>
+              <Text variant="caption" color="textFaint">
+                ·
+              </Text>
+              <Touchable
+                accessibilityRole="link"
                 accessibilityLabel="Read the privacy policy"
                 haptic="tap"
                 onPress={() => void openExternal(PRIVACY_URL)}
@@ -199,7 +248,7 @@ export default function SignUpScreen() {
                 style={{ paddingVertical: t.spacing.xxs }}
               >
                 <Text variant="caption" color="primaryText">
-                  Privacy Policy
+                  Privacy
                 </Text>
               </Touchable>
             </Row>
@@ -213,7 +262,7 @@ export default function SignUpScreen() {
               accessibilityRole="link"
               accessibilityLabel="Sign in instead"
               haptic="tap"
-              onPress={() => router.replace('/sign-in')}
+              onPress={() => router.replace(toHref('/sign-in'))}
               pressScale="small"
             >
               <Text variant="buttonSmall" color="primaryText">
@@ -304,6 +353,25 @@ export default function SignUpScreen() {
         </Animated.View>
 
         <Column gap="md">
+          <Checkbox
+            checked={agreed}
+            onChange={(next) => {
+              setAgreed(next);
+              if (next) setAgreementNudged(false);
+            }}
+            label={AGREEMENT_CONSENT}
+            description={AGREEMENT_CONSEQUENCE}
+            invalid={agreementNudged && !agreed}
+            accessibilityLabel={`${AGREEMENT_CONSENT} ${AGREEMENT_CONSEQUENCE}`}
+            testID="sign-up-agreement"
+          />
+
+          {agreementNudged && !agreed ? (
+            <Text variant="footnote" color="danger">
+              {COPY.agreementMissing}
+            </Text>
+          ) : null}
+
           <Button
             label={greeting ? `Create ${greeting}’s account` : 'Create my account'}
             onPress={() => void submit()}
@@ -313,6 +381,9 @@ export default function SignUpScreen() {
             hero
             fullWidth
             haptic="commit"
+            accessibilityHint={
+              agreed ? undefined : 'Tick the agreement above first — we can’t create an account without it.'
+            }
             testID="sign-up-submit"
           />
         </Column>

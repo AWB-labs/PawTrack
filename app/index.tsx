@@ -8,16 +8,22 @@
 import { Redirect } from 'expo-router';
 import React from 'react';
 
+import { useNeedsAgreement } from '@/data/queries/useModeration';
+import { toHref } from '@/lib/deeplinks';
 import { usePreferences } from '@/stores/preferences';
 import { useSession } from '@/stores/session';
 
 export default function Index() {
   const status = useSession((s) => s.status);
   const hasSeenWelcome = usePreferences((s) => s.hasSeenWelcome);
+  const needsAgreement = useNeedsAgreement();
 
   if (status === 'locked') return <Redirect href="/lock" />;
   if (status !== 'authenticated') {
     return <Redirect href={hasSeenWelcome ? '/sign-in' : '/welcome'} />;
   }
+  // The tabs branch isn't mounted while the agreement gate is up, so pointing
+  // at it here would land on nothing at all.
+  if (needsAgreement) return <Redirect href={toHref('/accept-terms')} />;
   return <Redirect href="/(tabs)" />;
 }

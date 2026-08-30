@@ -22,6 +22,12 @@
  *     itself rather than from a measure pass: measuring inside a virtualised
  *     list costs a second layout on every row, and a fold that flickers is
  *     worse than one that is occasionally a line out.
+ *
+ * The overflow control in the action row is where reporting and blocking live.
+ * It is on every card including your own — on somebody else's it opens report
+ * and block, on yours it opens delete — because a control that only appears on
+ * other people's posts teaches its own absence, and somebody looking for it in
+ * a hurry should never have to wonder whether this is a card that has one.
  */
 
 import { Image } from 'expo-image';
@@ -55,6 +61,7 @@ import { shareText } from '@/lib/share';
 import { spring, useTheme, type Theme } from '@/theme';
 import { Avatar, Badge, Icon, Text, Touchable, type IconName } from '@/ui';
 import { GroupChip } from './GroupChip';
+import { SafetyButton } from './SafetySheets';
 
 /* -------------------------------------------------------------------- types */
 
@@ -66,6 +73,8 @@ export type PostCardProps = {
   expanded?: boolean;
   onPress?: () => void;
   onComment?: () => void;
+  /** Opens the report / block / delete sheet. See `useContentSafety`. */
+  onMore?: () => void;
   /** Given the index of the photo that was tapped. */
   onOpenImage?: (imageIndex: number) => void;
   onOpenGroup?: (groupId: ID) => void;
@@ -135,6 +144,7 @@ export function PostCard({
   expanded = false,
   onPress,
   onComment,
+  onMore,
   onOpenImage,
   onOpenGroup,
   showGroup = true,
@@ -265,6 +275,16 @@ export function PostCard({
             {post.postedWhileSitting ? (
               <Badge label="Sitting" tone="accent" size="sm" accessibilityLabel="Posted while sitting" />
             ) : null}
+            {/* Only ever reaches the author — everyone else's copy of a hidden
+                post is filtered out before it gets this far. */}
+            {post.hiddenAt !== null ? (
+              <Badge
+                label="Under review"
+                tone="warning"
+                size="sm"
+                accessibilityLabel="Reported. Hidden from the community while we look at it."
+              />
+            ) : null}
           </View>
         </Tappable>
 
@@ -351,12 +371,18 @@ export function PostCard({
 
         <View style={styles.grow} />
 
-        <ActionButton
-          icon="share-outline"
-          label="Share this post"
-          hint="Opens the share sheet."
-          onPress={interactive ? onShare : undefined}
-        />
+        <View style={[styles.row, { gap: t.spacing.xs }]}>
+          <ActionButton
+            icon="share-outline"
+            label="Share this post"
+            hint="Opens the share sheet."
+            onPress={interactive ? onShare : undefined}
+          />
+
+          {interactive && onMore ? (
+            <SafetyButton onPress={onMore} accessibilityLabel={`More options for ${title}’s post`} />
+          ) : null}
+        </View>
       </View>
     </Animated.View>
   );

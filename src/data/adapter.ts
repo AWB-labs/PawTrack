@@ -28,9 +28,11 @@ import type {
   ActivityEvent,
   AdherenceSummary,
   Appointment,
+  BlockedAccount,
   CareTask,
   Comment,
   CommentWithAuthor,
+  ContentReport,
   DateOnly,
   DaySummary,
   DoseStatus,
@@ -47,6 +49,8 @@ import type {
   Post,
   PostWithAuthor,
   PresetId,
+  ReportReason,
+  ReportTargetKind,
   Session,
   User,
   Vaccination,
@@ -153,6 +157,35 @@ export type PostInput = {
 export type FeedScope = { groupId?: ID | null; authorId?: ID | null; petId?: ID | null };
 export type Page<T> = { items: T[]; nextCursor: string | null };
 
+/** Everything a flag carries. `snapshot` is what makes a deleted post reviewable. */
+export type ReportInput = {
+  targetKind: ReportTargetKind;
+  targetId: ID;
+  targetAuthorId: ID | null;
+  reason: ReportReason;
+  details?: string | null;
+  snapshot?: string | null;
+};
+
+/**
+ * A block, and the report it files on the way through.
+ *
+ * Blocking somebody is the loudest signal a person can send without typing
+ * anything, so it is never *only* a client-side mute: when it comes from a piece
+ * of content, that content and its author are reported in the same call. This is
+ * the "blocking should also notify the developer" half of the App Store's
+ * requirement, and it is why `blockUser` takes context rather than just an id.
+ */
+export type BlockInput = {
+  userId: ID;
+  /** Omit for a plain block from the settings screen — nothing is filed then. */
+  reason?: ReportReason;
+  contextKind?: ReportTargetKind;
+  contextId?: ID | null;
+  snapshot?: string | null;
+  details?: string | null;
+};
+
 /* ----------------------------------------------------------------- adapter */
 
 export interface DataAdapter {
@@ -258,6 +291,31 @@ export interface DataAdapter {
   listGroups(ctx: ActorContext): Promise<Group[]>;
   getGroup(ctx: ActorContext, groupId: ID): Promise<Group | null>;
   toggleGroupMembership(ctx: ActorContext, groupId: ID, joined: boolean): Promise<Group>;
+
+  /* ---- moderation ------------------------------------------------------ */
+
+  /**
+   * Flag something for review. Returns the filed report so the UI can say
+   * "we've got it" with a real record behind the sentence rather than a guess.
+   *
+   * Both implementations hide the target from the reporter immediately — a
+   * person who has just told us something is objectionable should not have to
+   * look at it while we work, and "we'll review it within a day" is only
+   * credible if the thing is already gone from their feed.
+   */
+  reportContent(ctx: ActorContext, input: ReportInput): Promise<ContentReport>;
+  /** The reporter's own history — what they flagged, and where it got to. */
+  listMyReports(ctx: ActorContext): Promise<ContentReport[]>;
+
+  listBlockedAccounts(ctx: ActorContext): Promise<BlockedAccount[]>;
+  /** Mutual and immediate: neither account sees the other's posts or comments. */
+  blockUser(ctx: ActorContext, input: BlockInput): Promise<BlockedAccount>;
+  unblockUser(ctx: ActorContext, userId: ID): Promise<void>;
+
+  /* ---- legal ----------------------------------------------------------- */
+
+  /** Records agreement to the terms. Gates the community, not the whole app. */
+  acceptTerms(ctx: ActorContext, version: number): Promise<User>;
 
   /* ---- users ----------------------------------------------------------- */
   getUser(ctx: ActorContext, userId: ID): Promise<User | null>;

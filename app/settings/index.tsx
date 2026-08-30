@@ -27,6 +27,7 @@ import { View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { describeDataSource } from '@/data';
+import { useBlockedAccounts } from '@/data/queries/useModeration';
 import { SettingsGroup } from '@/features/settings/SettingsGroup';
 import { SettingsRow } from '@/features/settings/SettingsRow';
 import {
@@ -81,6 +82,8 @@ export default function SettingsHubScreen() {
   const reminders = useAppSettings((s) => s.reminders);
   const quietHours = useAppSettings((s) => s.quietHours);
 
+  const blocked = useBlockedAccounts();
+
   /* ---- values the device owns ------------------------------------------ */
 
   const [permission, setPermission] = useState<PermissionOutcome | null>(null);
@@ -100,6 +103,14 @@ export default function SettingsHubScreen() {
   /* ---- derived ---------------------------------------------------------- */
 
   const dataSource = useMemo(() => describeDataSource(), []);
+
+  // Says the number rather than "Manage", because the one thing somebody
+  // opening this row usually wants to know is whether a block actually took.
+  const safetySubtitle = useMemo(() => {
+    const count = blocked.data?.length ?? 0;
+    if (count === 0) return 'Blocking, reporting, and the community rules';
+    return `${count} blocked · reporting and the community rules`;
+  }, [blocked.data]);
 
   const appearanceSubtitle = useMemo(() => {
     const parts = [`Weights in ${UNIT_LABEL[weightUnit].toLowerCase()}`];
@@ -198,6 +209,14 @@ export default function SettingsHubScreen() {
             subtitle={user ? user.email : 'Your name, photo and password'}
             accessibilityHint="Opens your name, photo, password and account deletion."
             onPress={() => router.push(toHref('/settings/account'))}
+          />
+          <SettingsRow
+            icon="shield-checkmark-outline"
+            tone="primary"
+            title="Safety and community"
+            subtitle={safetySubtitle}
+            accessibilityHint="Opens blocked accounts, your reports, and the community rules."
+            onPress={() => router.push(toHref('/settings/safety'))}
           />
           <SettingsRow
             icon="information-circle-outline"

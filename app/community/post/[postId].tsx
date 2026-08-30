@@ -46,6 +46,7 @@ import { runOnJS } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDeletePost, usePost } from '@/data/queries/useCommunity';
+import type { CommentWithAuthor } from '@/data/types';
 import {
   CommentBar,
   CommentList,
@@ -53,6 +54,7 @@ import {
   useCommentThread,
 } from '@/features/community/CommentSheet';
 import { PostCard } from '@/features/community/PostCard';
+import { useContentSafety } from '@/features/community/SafetySheets';
 import { toHref } from '@/lib/deeplinks';
 import { formatCount, possessive } from '@/lib/format';
 import haptics from '@/lib/haptics';
@@ -127,6 +129,7 @@ function PostDetail() {
   const remove = useDeletePost();
   const thread = useCommentThread(postId);
   const confirmDelete = useSheet();
+  const safety = useContentSafety();
 
   const inputRef = useRef<TextAreaHandle | null>(null);
   const [barHeight, setBarHeight] = useState(0);
@@ -179,6 +182,38 @@ function PostDetail() {
     [router],
   );
 
+  /**
+   * Reporting or blocking from here has to leave the screen as well as the
+   * feed — you cannot stand on a post you have just reported, so `onRemoved`
+   * takes you back to where the post used to be.
+   */
+  const openSafety = useCallback(() => {
+    if (!post) return;
+    safety.open({
+      kind: 'post',
+      id: post.id,
+      authorId: post.authorId,
+      authorName: post.author.displayName,
+      snapshot: post.body,
+      mine,
+      onDelete: () => confirmDelete.open(),
+      onRemoved: goBack,
+    });
+  }, [confirmDelete, goBack, mine, post, safety]);
+
+  const openCommentSafety = useCallback(
+    (comment: CommentWithAuthor) => {
+      safety.open({
+        kind: 'comment',
+        id: comment.id,
+        authorId: comment.authorId,
+        authorName: comment.author.displayName,
+        snapshot: comment.body,
+      });
+    },
+    [safety],
+  );
+
   /* ---- chrome ---------------------------------------------------------- */
 
   const header = (
@@ -186,14 +221,18 @@ function PostDetail() {
       title={post ? `${possessive(subject)} post` : 'Post'}
       large={false}
       actions={
-        mine ? (
+        post ? (
           <IconButton
-            icon="trash-outline"
-            accessibilityLabel="Take this post down"
-            accessibilityHint="Removes it and its comments for everyone."
+            icon={mine ? 'trash-outline' : 'ellipsis-horizontal'}
+            accessibilityLabel={mine ? 'Take this post down' : 'Report or block'}
+            accessibilityHint={
+              mine
+                ? 'Removes it and its comments for everyone.'
+                : 'Opens reporting and blocking for this post.'
+            }
             variant="ghost"
-            tone="danger"
-            onPress={() => confirmDelete.open()}
+            tone={mine ? 'danger' : 'neutral'}
+            onPress={mine ? () => confirmDelete.open() : openSafety}
           />
         ) : undefined
       }
@@ -261,6 +300,7 @@ function PostDetail() {
             expanded
             showGroup
             onComment={() => inputRef.current?.focus()}
+            onMore={openSafety}
             onOpenImage={(imageIndex) => setViewing(imageIndex)}
             onOpenGroup={openGroup}
           />
@@ -287,6 +327,7 @@ function PostDetail() {
             subject={subject}
             ground={t.color.bg}
             onWriteFirst={() => inputRef.current?.focus()}
+            onMore={openCommentSafety}
           />
         </View>
 
@@ -332,6 +373,8 @@ function PostDetail() {
         icon="trash-outline"
         onConfirm={deletePost}
       />
+
+      {safety.element}
     </>
   );
 }

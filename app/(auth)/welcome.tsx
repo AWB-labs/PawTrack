@@ -45,6 +45,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { AuthAtmosphere } from '@/features/auth/AuthScaffold';
+import { TERMS_VERSION } from '@/features/legal/agreement';
+import { toHref } from '@/lib/deeplinks';
 import { usePreferences } from '@/stores/preferences';
 import { useTheme } from '@/theme';
 import { Button, Column, Screen, Text, Touchable } from '@/ui';
@@ -254,6 +256,7 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
   const markWelcomeSeen = usePreferences((s) => s.markWelcomeSeen);
+  const acceptedTerms = usePreferences((s) => s.acceptedTermsVersion);
 
   const pagerRef = useRef<Pager | null>(null);
   const scrollX = useSharedValue(0);
@@ -299,12 +302,23 @@ export default function WelcomeScreen() {
     return () => clearInterval(timer);
   }, [driving, settleOn, t.motion.duration.ambient, t.reduceMotion, width]);
 
+  /**
+   * Both buttons go through the agreement first.
+   *
+   * Not a modal over the form and not a link under it: the App Store asks for
+   * the terms to be *presented* before somebody registers or signs in, and a
+   * screen you have to pass through is the only reading of that word nobody
+   * argues with. Once this device has agreed to the current version it stops
+   * appearing, so it costs a returning user nothing.
+   */
   const leave = useCallback(
-    (destination: '/sign-up' | '/sign-in') => {
+    (destination: 'sign-up' | 'sign-in') => {
       markWelcomeSeen();
-      router.push(destination);
+      const path =
+        acceptedTerms >= TERMS_VERSION ? `/${destination}` : `/agreement?next=${destination}`;
+      router.push(toHref(path));
     },
-    [markWelcomeSeen, router],
+    [acceptedTerms, markWelcomeSeen, router],
   );
 
   // Big enough to be the hero, never so big it pushes the copy off a small
@@ -370,7 +384,7 @@ export default function WelcomeScreen() {
           <Column gap="sm">
             <Button
               label="Create an account"
-              onPress={() => leave('/sign-up')}
+              onPress={() => leave('sign-up')}
               size="lg"
               hero
               fullWidth
@@ -379,7 +393,7 @@ export default function WelcomeScreen() {
             />
             <Button
               label="I already have one"
-              onPress={() => leave('/sign-in')}
+              onPress={() => leave('sign-in')}
               variant="ghost"
               size="md"
               fullWidth

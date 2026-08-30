@@ -39,6 +39,7 @@ import type {
   ActivityEvent,
   Appointment,
   Comment,
+  ContentReport,
   DateOnly,
   FeedingLog,
   FeedingSchedule,
@@ -50,6 +51,7 @@ import type {
   Pet,
   PetDocument,
   Post,
+  ReportReason,
   TimeOfDay,
   User,
   Vaccination,
@@ -63,6 +65,17 @@ import type {
 export type PostLike = { postId: ID; userId: ID };
 export type CommentLike = { commentId: ID; userId: ID };
 export type GroupMember = { groupId: ID; userId: ID };
+
+/**
+ * A block held relationally, like the likes above, so "did I block them?" is
+ * correct for whichever seeded account is signed in rather than baked into one.
+ */
+export type UserBlock = {
+  blockerId: ID;
+  blockedId: ID;
+  reason: ReportReason | null;
+  createdAt: string;
+};
 
 export type SeedData = {
   users: User[];
@@ -85,10 +98,15 @@ export type SeedData = {
   postLikes: PostLike[];
   comments: Comment[];
   commentLikes: CommentLike[];
+  blocks: UserBlock[];
+  reports: ContentReport[];
 };
 
-/** Bump to invalidate persisted demo stores after a shape change. */
-export const SEED_VERSION = 1;
+/**
+ * Bump to invalidate persisted demo stores after a shape change.
+ * v2 — moderation: blocks, reports, and the agreement stamp on every user.
+ */
+export const SEED_VERSION = 2;
 
 /**
  * A persisted seed older than this is regenerated on next launch. "Today" data
@@ -261,6 +279,10 @@ function buildUsers(now: Date): User[] {
       displayName: 'Maya Ellison',
       avatarUrl: avatar(45),
       bio: 'One golden retriever with opinions, one very serious cat, and a budgie who thinks he runs the flat.',
+      // The demo household agreed on the day they joined; a fresh sign-up
+      // has both of these null and meets the agreement gate instead.
+      termsAcceptedAt: iso(subMonths(now, 14)),
+      termsVersion: 1,
       createdAt: iso(subMonths(now, 14)),
     },
     {
@@ -269,6 +291,8 @@ function buildUsers(now: Date): User[] {
       displayName: 'Priya Raghunathan',
       avatarUrl: avatar(32),
       bio: 'Pet sitter in Bow. Certified in canine first aid. Thirty-one houseguests this year and counting.',
+      termsAcceptedAt: iso(subMonths(now, 11)),
+      termsVersion: 1,
       createdAt: iso(subMonths(now, 11)),
     },
     {
@@ -277,6 +301,8 @@ function buildUsers(now: Date): User[] {
       displayName: 'Sam Okonkwo',
       avatarUrl: avatar(12),
       bio: "Border collie dad. If Nala hasn't worked, nobody sleeps.",
+      termsAcceptedAt: iso(subMonths(now, 9)),
+      termsVersion: 1,
       createdAt: iso(subMonths(now, 9)),
     },
     {
@@ -285,6 +311,8 @@ function buildUsers(now: Date): User[] {
       displayName: 'Tom Bergström',
       avatarUrl: avatar(60),
       bio: 'Two rescue cats and a great many opinions about litter.',
+      termsAcceptedAt: iso(subMonths(now, 6)),
+      termsVersion: 1,
       createdAt: iso(subMonths(now, 6)),
     },
   ];
@@ -1942,6 +1970,7 @@ function buildCommunity(now: Date): {
       body: spec.body,
       likeCount: spec.likeCount,
       likedByMe: false,
+      hiddenAt: null,
       createdAt: iso(addMinutes(base, spec.minutesAfter)),
     });
     for (const userId of spec.likedBy) commentLikes.push({ commentId: spec.id, userId });
@@ -1962,6 +1991,7 @@ function buildCommunity(now: Date): {
       // Resolved per-viewer by the adapter; the stored value is never trusted.
       likedByMe: false,
       postedWhileSitting: spec.sitting === true,
+      hiddenAt: null,
       createdAt: iso(postAt.get(spec.id)!),
     };
   }).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
@@ -2020,6 +2050,8 @@ export function buildSeed(now: Date = new Date()): SeedData {
     appointments,
     activity,
     ...community,
+    blocks: [],
+    reports: [],
   };
 }
 

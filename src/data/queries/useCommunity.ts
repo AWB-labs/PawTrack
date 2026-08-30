@@ -241,6 +241,7 @@ export function useAddComment(postId: ID) {
           body: body.trim(),
           likeCount: 0,
           likedByMe: false,
+          hiddenAt: null,
           createdAt: new Date().toISOString(),
           author: user,
         };

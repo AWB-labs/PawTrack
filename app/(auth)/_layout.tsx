@@ -19,6 +19,7 @@ export default function AuthLayout() {
       }}
     >
       <Stack.Screen name="welcome" options={routeTransition.fade} />
+      <Stack.Screen name="agreement" />
       <Stack.Screen name="sign-in" />
       <Stack.Screen name="sign-up" />
       <Stack.Screen name="forgot-password" options={routeTransition.formSheet} />

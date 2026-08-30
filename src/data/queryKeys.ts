@@ -40,6 +40,7 @@ const APPOINTMENTS = [ROOT, 'appointments'] as const;
 const CARE = [ROOT, 'care'] as const;
 const CAREGIVERS = [ROOT, 'caregivers'] as const;
 const COMMUNITY = [ROOT, 'community'] as const;
+const SAFETY = [ROOT, 'safety'] as const;
 const USERS = [ROOT, 'users'] as const;
 const SESSION = [ROOT, 'session'] as const;
 
@@ -241,6 +242,28 @@ export const queryKeys = {
     root: [...COMMUNITY, 'groups'] as const,
     list: () => [...COMMUNITY, 'groups', 'list'] as const,
     detail: (groupId: ID) => [...COMMUNITY, 'groups', groupId] as const,
+  },
+
+  /* --------------------------------------------------------------- safety */
+
+  /**
+   * Blocks and reports sit under their own prefix rather than beneath
+   * `community`, because blocking has to invalidate the entire feed — and a key
+   * that lives *inside* the thing it invalidates is how you end up refetching
+   * the block list every time somebody likes a photo.
+   */
+  safety: {
+    root: SAFETY,
+  },
+
+  blocks: {
+    root: [...SAFETY, 'blocks'] as const,
+    forUser: (userId: ID) => [...SAFETY, 'blocks', userId] as const,
+  },
+
+  reports: {
+    root: [...SAFETY, 'reports'] as const,
+    forUser: (userId: ID) => [...SAFETY, 'reports', userId] as const,
   },
 } as const;
 
